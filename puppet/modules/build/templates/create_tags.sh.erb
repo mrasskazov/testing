@@ -1,0 +1,32 @@
+#!/bin/bash
+first="yes"
+<% @tags.each_pair do |tag,properties| %>
+echo "Setting up tag <%= tag %>..."
+koji add-tag <%= tag %>
+koji add-tag --parent <%= tag %> --arches "<%= arch %>" <%= tag %>-build
+koji add-target <%= tag %> <%= tag %>-build
+
+koji add-group <%= tag %> build
+koji add-group <%= tag %>-build build
+koji add-group-pkg <%= tag %> build <%= basepkgs %>
+koji add-group-pkg <%= tag %>-build build <%= basepkgs %>
+
+koji add-group <%= tag %> srpm-build
+koji add-group <%= tag %>-build srpm-build
+koji add-group-pkg <%= tag %> srpm-build <%= basepkgs %>
+koji add-group-pkg <%= tag %>-build srpm-build <%= basepkgs %>
+
+echo "Adding external yum repositories to tag <%= tag %>..."
+<% @repos.each_pair do |reponame,url| %>
+if [[ "$first" == "yes" ]];then
+  koji add-external-repo -t <%= tag %>-build "<%= reponame %>" "<%= url %>"
+else
+  koji add-external-repo -t <%= tag %>-build "<%= reponame %>"
+fi
+<% end %>
+
+echo "Building repo data for <%= tag %>..."
+koji regen-repo <%= tag %>-build &
+first="no"
+<% end %>
+echo "Complete!"

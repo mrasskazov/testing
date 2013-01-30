@@ -1,0 +1,6 @@
+[gerrit]
+host=gerrit.mirantis.com
+project=openstack-ci/openstack-ci.git
+defaultremote=gerrit-mirantis
+defaultbranch=master
+

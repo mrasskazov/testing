@@ -1,0 +1,103 @@
+# This is the Apache server configuration file providing SSL support.
+
+LoadModule ssl_module modules/mod_ssl.so
+Listen 443
+
+##  SSL Global Context
+
+#Only needed for systemd in F16 and up
+#SSLPassPhraseDialog exec:/usr/libexec/httpd-ssl-pass-dialog
+SSLSessionCache         shmcb:/var/cache/mod_ssl/scache(512000)
+SSLSessionCacheTimeout  300
+SSLMutex default
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+SSLCryptoDevice builtin
+
+##
+## SSL Virtual Host Context
+##
+
+<VirtualHost _default_:443>
+
+# General setup for the virtual host, inherited from global configuration
+#DocumentRoot "/var/www/html"
+#ServerName www.example.com:443
+
+# Use separate log files for the SSL virtual host; note that LogLevel
+# is not inherited from httpd.conf.
+ErrorLog logs/error_log
+CustomLog logs/access_log combined
+LogLevel warn
+
+#   SSL Engine Switch:
+#   Enable/Disable SSL for this virtual host.
+SSLEngine on
+
+#   SSL Protocol support:
+# List the enable protocol levels with which clients will be able to
+# connect.  Disable SSLv2 access by default:
+SSLProtocol all -SSLv2
+
+#   SSL Cipher Suite:
+#   List the ciphers that the client is permitted to negotiate.
+#   See the mod_ssl documentation for a complete list.
+SSLCipherSuite RC4-SHA:AES128-SHA:ALL:!ADH:!EXP:!LOW:!MD5:!SSLV2:!NULL
+
+#   SSL Cipher Honor Order:
+#   On a busy HTTPS server you may want to enable this directive
+#   to force clients to use one of the faster ciphers like RC4-SHA
+#   or AES128-SHA in the order defined by SSLCipherSuite.
+#SSLHonorCipherOrder on 
+<% if auth == "kerberos" %>
+
+SSLCertificateFile /etc/pki/tls/certs/<%= scope.lookupvar('::fqdn') %>.crt
+SSLCertificateKeyFile /etc/pki/tls/private/<%= scope.lookupvar('::fqdn') %>.key
+SSLCACertificatePath /etc/pki/tls/certs/
+<% else %>
+
+SSLCertificateFile /etc/pki/koji/certs/kojihub.crt
+SSLCertificateKeyFile /etc/pki/koji/certs/kojihub.key
+SSLCertificateChainFile /etc/pki/koji/koji_ca_cert.crt
+SSLCACertificateFile /etc/pki/koji/koji_ca_cert.crt
+SSLVerifyClient require
+SSLVerifyDepth  10
+<% end %>
+
+<Files ~ "\.(cgi|shtml|phtml|php3?)$">
+    SSLOptions +StdEnvVars
+</Files>
+<Directory "/var/www/cgi-bin">
+    SSLOptions +StdEnvVars
+</Directory>
+
+#   SSL Protocol Adjustments:
+#   The safe and default but still SSL/TLS standard compliant shutdown
+#   approach is that mod_ssl sends the close notify alert but doesn't wait for
+#   the close notify alert from client. When you need a different shutdown
+#   approach you can use one of the following variables:
+#   o ssl-unclean-shutdown:
+#     This forces an unclean shutdown when the connection is closed, i.e. no
+#     SSL close notify alert is send or allowed to received.  This violates
+#     the SSL/TLS standard but is needed for some brain-dead browsers. Use
+#     this when you receive I/O errors because of the standard approach where
+#     mod_ssl sends the close notify alert.
+#   o ssl-accurate-shutdown:
+#     This forces an accurate shutdown when the connection is closed, i.e. a
+#     SSL close notify alert is send and mod_ssl waits for the close notify
+#     alert of the client. This is 100% SSL/TLS standard compliant, but in
+#     practice often causes hanging connections with brain-dead browsers. Use
+#     this only for browsers where you know that their SSL implementation
+#     works correctly. 
+#   Notice: Most problems of broken clients are also related to the HTTP
+#   keep-alive facility, so you usually additionally want to disable
+#   keep-alive for those clients, too. Use variable "nokeepalive" for this.
+#   Similarly, one has to force some clients to use HTTP/1.0 to workaround
+#   their broken HTTP/1.1 implementation. Use variables "downgrade-1.0" and
+#   "force-response-1.0" for this.
+SetEnvIf User-Agent ".*MSIE.*" \
+         nokeepalive ssl-unclean-shutdown \
+         downgrade-1.0 force-response-1.0
+
+</VirtualHost>                                  
+

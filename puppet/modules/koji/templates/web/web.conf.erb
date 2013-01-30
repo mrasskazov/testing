@@ -1,0 +1,28 @@
+[web]
+SiteName = koji
+#KojiTheme = mytheme
+
+# Key urls
+KojiHubURL = http://127.0.0.1/kojihub
+KojiFilesURL = http://127.0.0.1/kojifiles
+
+<% if auth == "kerberos" %>
+WebPrincipal kojiweb/web>@EXAMPLE.COM
+WebKeytab /etc/kojiweb/kojiweb.keytab
+WebCCache /var/tmp/kojiweb.ccache
+<% end %>
+
+
+<% if auth == "ssl" %>
+# SSL authentication options
+WebCert = /etc/kojiweb/kojiweb.crt
+ClientCA = /etc/kojiweb/clientca.crt
+KojiHubCA = /etc/kojiweb/serverca.crt
+<% end %>
+
+LoginTimeout = 72
+
+# This must be changed and uncommented before deployment
+Secret = j23iojaoizjcvlkeweqsdiasdr12a
+
+LibPath = /usr/share/koji-web/lib

@@ -1,0 +1,84 @@
+#We use wsgi by default
+Alias /koji "/usr/share/koji-web/scripts/wsgi_publisher.py"
+#(configuration goes in /etc/kojiweb/web.conf)
+
+<Directory "/usr/share/koji-web/scripts/">
+    Options ExecCGI
+    SetHandler wsgi-script
+    Order allow,deny
+    Allow from all
+</Directory>
+
+
+#Alias /koji "/usr/share/koji-web/scripts/"
+#
+#<Directory "/usr/share/koji-web/scripts/">
+#    # Config for the publisher handler
+#    SetHandler mod_python
+#    # Use kojiweb's publisher (which handles errors more gracefully)
+#    # You can also use mod_python.publisher, but you will lose the pretty tracebacks
+#    PythonHandler kojiweb.publisher
+#
+#    # General settings
+#    PythonDebug On
+#    PythonOption SiteName Koji
+#
+#    PythonOption KojiHubURL https://<%= scope.lookupvar('::fqdn') %>/kojihub
+#    PythonOption KojiPackagesURL https://<%= scope.lookupvar('::fqdn') %>/mnt/koji/packages
+#    PythonOption KojiMavenURL https://<%= scope.lookupvar('::fqdn') %>/mnt/koji/maven2
+#    PythonOption KojiImagesURL https://<%= scope.lookupvar('::fqdn') %>/mnt/koji/images
+#<% if auth == "kerberos" %>
+#    PythonOption WebPrincipal kojiweb/<%= scope.lookupvar('::fqdn') %>@KTDREYER.COM
+#    PythonOption WebKeytab /etc/kojiweb/web.keytab
+#    PythonOption WebCCache /var/tmp/kojiweb.ccache
+#<% end %>
+#
+#<% if auth == "ssl" %>
+#    PythonOption WebCert /etc/kojiweb/kojiweb.crt
+#    PythonOption ClientCA /etc/kojiweb/clientca.crt
+#<% end %>
+#    PythonOption KojiHubCA /etc/kojiweb/serverca.crt
+#
+#    PythonOption LoginTimeout 72
+#    # This must be changed before deployment
+#    PythonOption Secret Eing&ei-Mev8uWoo
+#    PythonPath "sys.path + ['/usr/share/koji-web/lib']"
+#    PythonCleanupHandler kojiweb.handlers::cleanup
+#    PythonAutoReload Off
+#</Directory>
+
+<% if auth == "kerberos" %>
+# Enable authentication via Kerberos
+<Location /koji/login>
+	AuthType Kerberos
+	AuthName "Koji Web UI"
+	KrbMethodNegotiate on
+	KrbMethodK5Passwd off
+	KrbServiceName HTTP
+	KrbAuthRealm <%= realm %>
+	Krb5Keytab /etc/httpd/http.keytab
+	KrbSaveCredentials off
+	Require valid-user
+	ErrorDocument 401 /koji-static/errors/unauthorized.html
+</Location>
+<% end %>
+
+<% if auth == "ssl" %>
+# Enable authentication via SSL client certificates
+<Location /koji/login>
+	SSLVerifyClient require
+	SSLVerifyDepth  10
+	SSLOptions +StdEnvVars
+</Location>
+<% end %>
+
+Alias /koji-static/ "/usr/share/koji-web/static/"
+
+<Directory "/usr/share/koji-web/static/">
+    Options None
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+</Directory>
+
+# vim:filetype=apache

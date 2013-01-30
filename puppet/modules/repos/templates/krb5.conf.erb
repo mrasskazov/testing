@@ -1,0 +1,10 @@
+[libdefaults]
+	default_realm = <%= realm %>
+	forwardable = true
+<% if admin_server != "NONE" %>
+
+[realms]
+	<%= realm %> = {
+		admin_server = <%= admin_server %>:749
+	}
+<% end %>
