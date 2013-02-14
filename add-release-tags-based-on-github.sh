@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-#set -x
+set -x
 
 if [ -n "$1" ]; then
     pretend=echo
@@ -23,16 +23,16 @@ for prj in $PROJECTS; do
         * )
             branch=stable/folsom;;
     esac
-    git remote add gerrit-mirantis ssh://$USERNAME@gerrit.mirantis.com:29418/openstack/$prj.git
-    git fetch -q gerrit-mirantis openstack-ci/fuel/folsom
+    git remote add mirantis-$prj ssh://$USERNAME@gerrit.mirantis.com:29418/openstack/$prj.git
+    git fetch -q mirantis-$prj openstack-ci/fuel/folsom
     git tag t1 FETCH_HEAD
-    git remote add github git://github.com/openstack/$prj.git
-    git fetch -q --tags github $branch
+    git remote add github-$prj git://github.com/openstack/$prj.git
+    git fetch -q --tags github-$prj $branch
     tag_base=$(git describe FETCH_HEAD)
     tag_base=${tag_base%%-*}
     [ -n "$pretend" ] && echo -n "$prj "
-    $pretend git push gerrit-mirantis refs/tags/t1:refs/tags/openstack-ci/fuel/$tag_base/2.0
+    $pretend git push miranits-$prj refs/tags/t1:refs/tags/openstack-ci/fuel/$tag_base/2.0
     rm .git/refs/tags/*
-    git remote rm gerrit-mirantis
-    git remote rm github
+    git remote rm miranits-$prj
+    git remote rm github-$prj
 done
