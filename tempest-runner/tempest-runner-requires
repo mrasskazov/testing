@@ -1,0 +1,15 @@
+python-glanceclient
+python-novaclient
+python-keystoneclient
+python-quantumclient
+python-swiftclient
+python-cinderclient
+#MySQL-python==1.2.3
+#mysql-connector-python
+# https://bugs.launchpad.net/python-keystoneclient/+bug/1116740I
+requests>=0.8.8,<1.0
+distribute>=0.6.28
+#pymysql
+MySQL-python
+#netaddr
+

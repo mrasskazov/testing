@@ -1,0 +1,31 @@
+export TESTCASE=tempest/tests/compute/test_create_server.py
+
+export OS_AUTH_URL=http://172.18.66.180:5000/v2.0/
+#export OS_AUTH_STRATEGY=keystone
+export OS_USERNAME=admin
+export OS_PASSWORD=nova
+export OS_TENANT_NAME=admin
+
+#export TOS_IMAGE_NAME=tempest-cirros-01
+#export TOS_IMAGE_LINK='http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img'
+#export TOS_IMAGE_NAME_ALT=tempest-cirros-02
+#export TOS_IMAGE_LINK_ALT='http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img'
+
+#export TOS_FLAVOR_REF=641
+#export TOS_FLAVOR_REF_ALT=642
+
+#export TOS_MEMBER_ROLE_NAME=Member
+
+#export TOS_USERNAME=u1
+#export TOS_PASSWORD=secrete
+#export TOS_TENANT_NAME=t1
+
+#export TOS_USERNAME_ALT=u2
+#export TOS_PASSWORD_ALT=secrete
+#export TOS_TENANT_NAME_ALT=t2
+
+export TOS_RUN_SSH=true
+#export TOS_SSH_USER=cirros
+export TOS_PRIVATE_NETWORK_NAME=int_net
+#export TOS_IP_VERSION_FOR_SSH=4
+
