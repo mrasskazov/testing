@@ -1,5 +1,7 @@
 #!/bin/bash -x
 
+TOS_REINSTALL_VIRTUALENV=${TOS_REINSTALL_VIRTUALENV:-true}
+
 TESTCASE=${TESTCASE:-tempest/tests}
 OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 OS_USERNAME=${OS_USERNAME:-admin}
@@ -108,11 +110,14 @@ pushd $TEMPEST_DIR
     route -n
     echo "================================================================================="
     find . -name *.pyc -delete
-    #rm -rf .tempest_venv
+    if [ "$TOS_REINSTALL_VIRTUALENV" = "true" ]; then
+        rm -rf .tempest_venv
+    fi
     virtualenv .tempest_venv
     . .tempest_venv/bin/activate
     pip install -r tools/pip-requires
     pip install -r tools/test-requires
+    pip install -r $TOP_DIR/tempest-runner-pre-requires
     pip install -r $TOP_DIR/tempest-runner-requires
 
     echo "================================================================================="
