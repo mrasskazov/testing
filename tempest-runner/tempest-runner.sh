@@ -1,17 +1,19 @@
 #!/bin/bash -x
 
-TOS_REINSTALL_VIRTUALENV=${TOS_REINSTALL_VIRTUALENV:-true}
+TOS_REINSTALL_VIRTUALENV=${TOS_REINSTALL_VIRTUALENV:-false}
+TOS_CREATE_ENTITIES=${TOS_CREATE_ENTITIES:-true}
+TOS_DELETE_ENTITIES=${TOS_DELETE_ENTITIES:-false}
 
 TESTCASE=${TESTCASE:-tempest/tests}
-OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 OS_USERNAME=${OS_USERNAME:-admin}
 OS_PASSWORD=${OS_PASSWORD:-secrete}
 OS_TENANT_NAME=${OS_TENANT_NAME:-admin}
+OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 
 TOS_IMAGE_NAME=${TOS_IMAGE_NAME:-tempest-cirros-01}
 TOS_IMAGE_LINK=${TOS_IMAGE_LINK:-'http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img'}
 TOS_IMAGE_NAME_ALT=${TOS_IMAGE_NAME_ALT:-tempest-cirros-02}
-TOS_IMAGE_LINK_ALT=${TOS_IMAGE_LINK_ALT:-'http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img'}
+TOS_IMAGE_LINK_ALT=${TOS_IMAGE_LINK_ALT:-$TOS_IMAGE_LINK}
 
 TOS_FLAVOR_REF=${TOS_FLAVOR_REF:-641}
 TOS_FLAVOR_REF_ALT=${TOS_FLAVOR_REF_ALT:-642}
@@ -84,25 +86,46 @@ image_id () {
 
 tenant_create () {
     # tenant_name
-    #if [ "$(tenant_id $u)" == "" ]; then
+    if [ "$(tenant_id $1)" == "" ]; then
         keystone --debug tenant-create --name $1
-    #fi
+        echo $?
+    fi
 }
 user_create () {
     # user_name tenant_name password email enabled
-    keystone --debug user-create --name $1 --tenant-id $(tenant_id $2) --pass $3 --email $4 --enabled $5
+    if [ "$(user_id $1)" == "" ]; then
+        keystone --debug user-create --name $1 --tenant-id $(tenant_id $2) --pass $3 --email $4 --enabled $5
+        echo $?
+    fi
 }
 user_role_add () {
     # user_name tenant_name role_name
-    keystone --debug user-role-add --user-id $(user_id $1) --tenant-id $(tenant_id $2) --role-id $(role_id $3)
+    if [ "$(role_id $3)" != "" ]; then
+        if [ "$(keystone user-role-list --user-id $(user_id $1) --tenant-id $(tenant_id $2))" == "" ]; then
+            keystone --debug user-role-add --user-id $(user_id $1) --tenant-id $(tenant_id $2) --role-id $(role_id $3)
+            echo $?
+        else
+            echo "Role $3 in tenant $2 already assigned for user $1."
+        fi
+    else
+        echo "Wrong system variable value: \$TOS_MEMBER_ROLE_NAME=$TOS_MEMBER_ROLE_NAME"
+    fi
 }
 flavor_create () {
     # is_public flavor_name id ram disk vcpus
-    nova --debug flavor-create --is-public $1 $2 $3 $4 $5 $6
+    if [ "$(flavor_id $2)" == "" ]; then
+        nova --debug flavor-create --is-public $1 $2 $3 $4 $5 $6
+        echo $?
+    fi
 }
 image_create_img () {
-    # is-public name file disk-format container-format
-    glance --debug image-create --is-public $1 --name $2 --file $3 --disk-format $4 --container-format $5
+    # is-public name IMANE_LINK disk-format container-format 
+    if [ "$(image_id $2)" == "" ]; then
+        wget --progress=dot:mega -c $3
+        TOS_IMAGE_FILE_NAME=.$(echo $3 | grep -Eo '/[^/]*?$')
+        glance --debug image-create --is-public $1 --name $2 --file $TOS_IMAGE_FILE_NAME --disk-format $4 --container-format $5
+        echo $?
+    fi
 }
 
 pushd $TEMPEST_DIR
@@ -120,28 +143,26 @@ pushd $TEMPEST_DIR
     pip install -r $TOP_DIR/tempest-runner-pre-requires
     pip install -r $TOP_DIR/tempest-runner-requires
 
-    echo "================================================================================="
-    echo "Preparing Tempest's environment..."
+    if [ "$TOS_CREATE_ENTITIES" = "true" ]; then
+        echo "================================================================================="
+        echo "Preparing Tempest's environment..."
 
-    tenant_create $TOS_TENANT_NAME
-    user_create $TOS_USERNAME $TOS_TENANT_NAME $TOS_PASSWORD $TOS_USERNAME@$TOS_TENANT_NAME.qa true
-    user_role_add $TOS_USERNAME $TOS_TENANT_NAME $TOS_MEMBER_ROLE_NAME
+        tenant_create $TOS_TENANT_NAME
+        user_create $TOS_USERNAME $TOS_TENANT_NAME $TOS_PASSWORD $TOS_USERNAME@$TOS_TENANT_NAME.qa true
+        user_role_add $TOS_USERNAME $TOS_TENANT_NAME $TOS_MEMBER_ROLE_NAME
 
-    tenant_create $TOS_TENANT_NAME_ALT
-    user_create $TOS_USERNAME_ALT $TOS_TENANT_NAME_ALT $TOS_PASSWORD_ALT $TOS_USERNAME_ALT@$TOS_TENANT_NAME_ALT.qa true
-    user_role_add $TOS_USERNAME_ALT $TOS_TENANT_NAME_ALT $TOS_MEMBER_ROLE_NAME
+        tenant_create $TOS_TENANT_NAME_ALT
+        user_create $TOS_USERNAME_ALT $TOS_TENANT_NAME_ALT $TOS_PASSWORD_ALT $TOS_USERNAME_ALT@$TOS_TENANT_NAME_ALT.qa true
+        user_role_add $TOS_USERNAME_ALT $TOS_TENANT_NAME_ALT $TOS_MEMBER_ROLE_NAME
 
-    flavor_create true f64_1 $TOS_FLAVOR_REF 64 0 1
-    flavor_create true f64_2 $TOS_FLAVOR_REF_ALT 64 0 1
+        flavor_create true f64_1 $TOS_FLAVOR_REF 64 0 1
+        flavor_create true f64_2 $TOS_FLAVOR_REF_ALT 64 0 1
 
-    wget --progress=dot:mega -c $TOS_IMAGE_LINK
-    wget --progress=dot:mega -c $TOS_IMAGE_LINK_ALT
+        # is-public name disk-format IMAGE_LINK container-format
+        image_create_img true $TOS_IMAGE_NAME $TOS_IMAGE_LINK qcow2 bare
+        image_create_img true $TOS_IMAGE_NAME_ALT $TOS_IMAGE_LINK qcow2 bare
 
-    # is-public name file disk-format container-format
-    TOS_IMAGE_FILE_NAME=.$(echo $TOS_IMAGE_LINK | grep -Eo '/[^/]*?$')
-    image_create_img true $TOS_IMAGE_NAME $TOS_IMAGE_FILE_NAME qcow2 bare
-    TOS_IMAGE_FILE_NAME_ALT=.$(echo $TOS_IMAGE_LINK_ALT | grep -Eo '/[^/]*?$')
-    image_create_img true $TOS_IMAGE_NAME_ALT $TOS_IMAGE_FILE_NAME_ALT qcow2 bare
+    fi
 
     echo "================================================================================="
     echo "Generating Tempest's config..."
@@ -196,20 +217,23 @@ pushd $TEMPEST_DIR
     nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
     TEMPEST_RET=$?
 
-    echo "================================================================================="
-    echo "Clean Tempest's environment..."
-    glance image-delete $(image_id $TOS_IMAGE_NAME)
-    glance image-delete $(image_id $TOS_IMAGE_NAME_ALT)
-    nova flavor-delete $TOS_FLAVOR_REF
-    nova flavor-delete $TOS_FLAVOR_REF_ALT
-    keystone user-role-remove --user-id $(user_id $TOS_USERNAME) --role-id $(role_id $TOS_MEMBER_ROLE_NAME) --tenant-id $(tenant_id $TOS_TENANT_NAME)
-    keystone user-role-remove --user-id $(user_id $TOS_USERNAME_ALT) --role-id $(role_id $TOS_MEMBER_ROLE_NAME) --tenant-id $(tenant_id $TOS_TENANT_NAME_ALT)
-    keystone user-delete $(user_id $TOS_USERNAME)
-    keystone user-delete $(user_id $TOS_USERNAME_ALT)
-    keystone tenant-delete $(tenant_id $TOS_TENANT_NAME)
-    keystone tenant-delete $(tenant_id $TOS_TENANT_NAME_ALT)
+    if [ "$TOS_DELETE_ENTITIES" = "true" ]; then
+        echo "================================================================================="
+        echo "Clean Tempest's environment..."
+        glance image-delete $(image_id $TOS_IMAGE_NAME)
+        glance image-delete $(image_id $TOS_IMAGE_NAME_ALT)
+        nova flavor-delete $TOS_FLAVOR_REF
+        nova flavor-delete $TOS_FLAVOR_REF_ALT
+        keystone user-role-remove --user-id $(user_id $TOS_USERNAME) --role-id $(role_id $TOS_MEMBER_ROLE_NAME) --tenant-id $(tenant_id $TOS_TENANT_NAME)
+        keystone user-role-remove --user-id $(user_id $TOS_USERNAME_ALT) --role-id $(role_id $TOS_MEMBER_ROLE_NAME) --tenant-id $(tenant_id $TOS_TENANT_NAME_ALT)
+        keystone user-delete $(user_id $TOS_USERNAME)
+        keystone user-delete $(user_id $TOS_USERNAME_ALT)
+        keystone tenant-delete $(tenant_id $TOS_TENANT_NAME)
+        keystone tenant-delete $(tenant_id $TOS_TENANT_NAME_ALT)
+    fi
 
     deactivate
 
 popd
 exit $TEMPEST_RET
+
