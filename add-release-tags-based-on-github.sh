@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
-set -x
-
+quiet=-q
 if [ -n "$1" ]; then
     pretend=echo
 else
@@ -24,15 +23,18 @@ for prj in $PROJECTS; do
             branch=stable/folsom;;
     esac
     git remote add mirantis-$prj ssh://$USERNAME@gerrit.mirantis.com:29418/openstack/$prj.git
-    git fetch -q mirantis-$prj openstack-ci/fuel/folsom
+    git fetch $quiet mirantis-$prj openstack-ci/folsom
     git tag t1 FETCH_HEAD
+    git fetch $quiet --tags mirantis-$prj openstack-ci/fuel/folsom
+    git tag t2 FETCH_HEAD
     git remote add github-$prj git://github.com/openstack/$prj.git
-    git fetch -q --tags github-$prj $branch
-    tag_base=$(git describe FETCH_HEAD)
+    git fetch $quiet --tags github-$prj $branch
+    $pretend git push mirantis-$prj $(for t in $(git tag -l | grep openstack-ci); do echo :$t; done)
+    tag_base=$(git describe --tags t1~)
     tag_base=${tag_base%%-*}
     [ -n "$pretend" ] && echo -n "$prj "
-    $pretend git push miranits-$prj refs/tags/t1:refs/tags/openstack-ci/fuel/$tag_base/2.0
-    rm .git/refs/tags/*
-    git remote rm miranits-$prj
+    $pretend git push mirantis-$prj refs/tags/t1:refs/tags/openstack-ci/$tag_base refs/tags/t2:refs/tags/openstack-ci/fuel/$tag_base/2.0
+    rm -r .git/refs/tags/*
+    git remote rm mirantis-$prj
     git remote rm github-$prj
 done
