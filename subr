@@ -4,7 +4,7 @@ ALL_CLIENT_PROJECTS="cinder glance keystone nova quantum swift"
 PROJECTS=""
 
 _clean_but() {
-    if [ $1 == 'but' ]; then
+    if [ "$1" == 'but' ]; then
         shift
         for prj; do
             PROJECTS=${PROJECTS/ $prj /}
@@ -14,6 +14,14 @@ _clean_but() {
 
 add_all_projects() {
     PROJECTS="$PROJECTS $ALL_PROJECTS"
+    local prj
+    for prj in $ALL_CLIENT_PROJECTS; do
+        PROJECTS="$PROJECTS python-${prj}client "
+    done
+    _clean_but $@
+}
+
+add_client_projects() {
     local prj
     for prj in $ALL_CLIENT_PROJECTS; do
         PROJECTS="$PROJECTS python-${prj}client "
