@@ -38,6 +38,9 @@ TOS_NETWORK_FOR_SSH=${TOS_NETWORK_FOR_SSH:-private}
 TOS_IP_VERSION_FOR_SSH=${TOS_IP_VERSION_FOR_SSH:-4}
 
 
+TOS__NETWORK__API_VERSION=${TOS__NETWORK__API_VERSION:-v2.0}
+
+
 TOP_DIR=$(cd $(dirname "$0") && pwd)
 TEMPEST_DIR=$(readlink -f $TOP_DIR/../../tempest)
 if [[ ! -r $TEMPEST_DIR ]]; then
@@ -208,6 +211,8 @@ pushd $TEMPEST_DIR
         change_value $CONF identity-admin username $OS_USERNAME
         change_value $CONF identity-admin password $OS_PASSWORD
         change_value $CONF identity-admin tenant_name $OS_TENANT_NAME
+
+        change_value $CONF network api_version $TOS__NETWORK__API_VERSION
     popd
 
     #export PYTHONPATH="$PWD/tempest:$PYTHONPATH"
