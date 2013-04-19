@@ -1,4 +1,12 @@
 # vi:syntax=sh 
+init_repo() {
+    local repo="${1:-$PWD/tmp-repo}"
+    if [ ! -d $repo ]; then
+        git init --bare "$repo"
+    fi
+    export GIT_DIR="$repo"
+}
+
 ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest "
 ALL_CLIENT_PROJECTS="cinder glance keystone nova quantum swift"
 PROJECTS=""
@@ -70,7 +78,7 @@ add_github_remote() {
 }
 
 cleanup_tags() {
-    find .git/refs/tags -mindepth 1 -delete
+    find ${GIT_DIR:-.git}/refs/tags -mindepth 1 -delete
 }
 
 cleanup_all() {
