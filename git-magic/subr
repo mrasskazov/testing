@@ -48,9 +48,10 @@ add_remote() {
     local name=$1
     local url=$2
     if git remote | grep "$name" > /dev/null; then
-        git remote rm "$name"
+        git remote set-url "$name" "$url"
+    else
+        git remote add "$name" "$url"
     fi
-    git remote add "$name" "$url"
 }
 
 cleanup_remotes() {
