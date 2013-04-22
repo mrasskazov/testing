@@ -10,6 +10,7 @@ init_repo() {
 ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest  oslo "
 ALL_CLIENT_PROJECTS="cinder glance keystone nova quantum swift"
 PROJECTS=""
+GITHUB_REMOTE_oslo="git://github.com/openstack/oslo-incubator"
 
 _clean_but() {
     if [ "$1" == 'but' ]; then
@@ -67,7 +68,12 @@ add_mirantis_remote() {
     if [ -z "$prj" ]; then
         echo "$$prj or positional arg expected" >&2
     fi
-    add_remote mirantis-$prj ssh://${USERNAME:+$USERNAME@}gerrit.mirantis.com:29418/openstack/$prj.git
+    if [ -z "${MIRANTIS_REMOTE_$prj}" ]; then
+        url="ssh://${USERNAME:+$USERNAME@}gerrit.mirantis.com:29418/openstack/$prj.git"
+    else
+        url="${MIRANTIS_REMOTE_$prj}"
+    fi
+    add_remote mirantis-$prj "$url"
 }
 
 add_github_remote() {
@@ -75,7 +81,12 @@ add_github_remote() {
     if [ -z "$prj" ]; then
         echo "$$prj or positional arg expected" >&2
     fi
-    add_remote github-$prj git://github.com/openstack/${prj}.git
+    if [ -z "${GITHUB_REMOTE_$prj}" ]; then
+        url="git://github.com/openstack/${prj}.git"
+    else
+        url="${GITHUB_REMOTE_$prj}"
+    fi
+    add_remote github-$prj "$url"
 }
 
 cleanup_tags() {
