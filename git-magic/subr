@@ -7,10 +7,11 @@ init_repo() {
     export GIT_DIR="$repo"
 }
 
-ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest  oslo "
+ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest  oslo  savanna "
 ALL_CLIENT_PROJECTS="cinder glance keystone nova quantum swift"
 PROJECTS=""
-GITHUB_REMOTE_oslo="git://github.com/openstack/oslo-incubator"
+GITHUB_REMOTE_oslo="git://github.com/openstack/oslo-incubator.git"
+GITHUB_REMOTE_savanna="git://github.com/stackforge/savanna.git"
 
 _clean_but() {
     if [ "$1" == 'but' ]; then
