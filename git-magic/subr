@@ -7,7 +7,7 @@ init_repo() {
     export GIT_DIR="$repo"
 }
 
-ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest "
+ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest  oslo "
 ALL_CLIENT_PROJECTS="cinder glance keystone nova quantum swift"
 PROJECTS=""
 
