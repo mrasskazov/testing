@@ -68,10 +68,11 @@ add_mirantis_remote() {
     if [ -z "$prj" ]; then
         echo "$$prj or positional arg expected" >&2
     fi
-    if [ -z "${MIRANTIS_REMOTE_$prj}" ]; then
+    local remote_var=MIRANTIS_REMOTE_$prj
+    if [ -z "${!remote_var}" ]; then
         url="ssh://${USERNAME:+$USERNAME@}gerrit.mirantis.com:29418/openstack/$prj.git"
     else
-        url="${MIRANTIS_REMOTE_$prj}"
+        url="${!remote_var}"
     fi
     add_remote mirantis-$prj "$url"
 }
@@ -81,10 +82,11 @@ add_github_remote() {
     if [ -z "$prj" ]; then
         echo "$$prj or positional arg expected" >&2
     fi
-    if [ -z "${GITHUB_REMOTE_$prj}" ]; then
+    local remote_var=GITHUB_REMOTE_$prj
+    if [ -z "${!remote_var}" ]; then
         url="git://github.com/openstack/${prj}.git"
     else
-        url="${GITHUB_REMOTE_$prj}"
+        url="${!remote_var}"
     fi
     add_remote github-$prj "$url"
 }
