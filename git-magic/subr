@@ -7,7 +7,7 @@ init_repo() {
     export GIT_DIR="$repo"
 }
 
-ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest  oslo  savanna "
+ALL_PROJECTS=" cinder  glance  horizon  keystone  nova  quantum  swift  tempest  oslo  savanna  oslo.config "
 ALL_CLIENT_PROJECTS="cinder glance keystone nova quantum swift"
 PROJECTS=""
 GITHUB_REMOTE_oslo="git://github.com/openstack/oslo-incubator.git"
