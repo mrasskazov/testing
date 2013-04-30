@@ -11,7 +11,13 @@ OS_TENANT_NAME=${OS_TENANT_NAME:-admin}
 OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 
 TOS_IMAGE_NAME=${TOS_IMAGE_NAME:-tempest-cirros-01}
-TOS_IMAGE_LINK=${TOS_IMAGE_LINK:-'http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img'}
+
+CIRROS_HOST=http://download.cirros-cloud.net/
+wget -c $CIRROS_HOST/version/released
+CIRROS_RELEASE=$(cat released)
+rm released
+TOS_IMAGE_LINK=${TOS_IMAGE_LINK:-"http://download.cirros-cloud.net/$CIRROS_RELEASE/cirros-$CIRROS_RELEASE-x86_64-disk.img"}
+
 TOS_IMAGE_NAME_ALT=${TOS_IMAGE_NAME_ALT:-tempest-cirros-02}
 TOS_IMAGE_LINK_ALT=${TOS_IMAGE_LINK_ALT:-$TOS_IMAGE_LINK}
 
