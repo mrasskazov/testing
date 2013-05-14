@@ -298,6 +298,14 @@ pushd $TEMPEST_DIR
         keystone tenant-delete $(get_id $TOS_TENANT_NAME_ALT keystone tenant-list)
     fi
 
+    XML_FILE=$TEMPEST_DIR/nosetests_table.xml
+    cp $TEMPEST_DIR/nosetests.xml $XML_FILE
+    XSL_FILE=xunit.xsl
+    cp $TOP_DIR/$XSL_FILE $TEMPEST_DIR/
+    if [ "$(grep -Eo "xml-stylesheet" $XML_FILE)" == "" ]; then
+        sed -ie "0,/\?></ s/?></?><?xml-stylesheet type=\"text\/xsl\" href=\"$XSL_FILE\"?></" "$XML_FILE"
+    fi
+
     deactivate
 
 popd
