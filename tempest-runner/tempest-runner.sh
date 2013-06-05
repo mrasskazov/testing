@@ -200,15 +200,15 @@ pushd $TOP_DIR/../..
             echo "================================================================================="
             echo "Preparing Tempest's environment..."
 
-            tenant_create $TOS__COMPUTE__TENANT_NAME
-            user_create $TOS__COMPUTE__USERNAME $TOS__COMPUTE__TENANT_NAME $TOS__COMPUTE__PASSWORD $TOS__COMPUTE__USERNAME@$TOS_TENANT_NAME.qa true
-            user_role_add $TOS__COMPUTE__USERNAME $TOS__COMPUTE__TENANT_NAME $MEMBER_ROLE_NAME
-            net_create $TOS__COMPUTE__TENANT_NAME 10.0.1.0/24
+            tenant_create $TOS__IDENTITY__TENANT_NAME
+            user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true
+            user_role_add $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $MEMBER_ROLE_NAME
+            net_create $TOS__IDENTITY__TENANT_NAME 10.0.1.0/24
 
-            tenant_create $TOS__COMPUTE__ALT_TENANT_NAME
-            user_create $TOS__COMPUTE__ALT_USERNAME $TOS__COMPUTE__ALT_TENANT_NAME $TOS__COMPUTE__ALT_PASSWORD $TOS__COMPUTE__ALT_USERNAME@$TOS_TENANT_NAME_ALT.qa true
-            user_role_add $TOS__COMPUTE__ALT_USERNAME $TOS__COMPUTE__ALT_TENANT_NAME $MEMBER_ROLE_NAME
-            net_create $TOS__COMPUTE__ALT_TENANT_NAME 10.0.2.0/24
+            tenant_create $TOS__IDENTITY__ALT_TENANT_NAME
+            user_create $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $TOS__COMPUTE__ALT_PASSWORD $TOS__IDENTITY__ALT_USERNAME@$TOS__IDENTITY__ALT_TENANT_NAME.qa true
+            user_role_add $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $MEMBER_ROLE_NAME
+            net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.2.0/24
 
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
@@ -253,14 +253,14 @@ pushd $TOP_DIR/../..
             glance image-delete $(get_id $IMAGE_NAME_ALT glance image-list)
             nova flavor-delete $TOS__COMPUTE__FLAVOR_REF
             nova flavor-delete $TOS__COMPUTE__FLAVOR_REF_ALT
-            keystone user-role-remove --user-id $(get_id $TOS__COMPUTE__USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__COMPUTE__TENANT_NAME keystone tenant-list)
-            keystone user-role-remove --user-id $(get_id $TOS__COMPUTE__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__COMPUTE__ALT_TENANT_NAME keystone tenant-list)
-            keystone user-delete $(get_id $TOS__COMPUTE__USERNAME keystone user-list)
-            keystone user-delete $(get_id $TOS__COMPUTE__ALT_USERNAME keystone user-list)
-            net_delete $TOS__COMPUTE__TENANT_NAME
-            net_delete $TOS__COMPUTE__ALT_TENANT_NAME
-            keystone tenant-delete $(get_id $TOS__COMPUTE__TENANT_NAME keystone tenant-list)
-            keystone tenant-delete $(get_id $TOS__COMPUTE__ALT_TENANT_NAME keystone tenant-list)
+            keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
+            keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
+            keystone user-delete $(get_id $TOS__IDENTITY__USERNAME keystone user-list)
+            keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
+            net_delete $TOS__IDENTITY__TENANT_NAME
+            net_delete $TOS__IDENTITY__ALT_TENANT_NAME
+            keystone tenant-delete $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
+            keystone tenant-delete $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
         fi
 
         XML_FILE=$TEMPEST_DIR/nosetests_table.xml
