@@ -102,8 +102,8 @@ image_create_img () {
     # is-public name IMANE_LINK disk-format container-format
     if [ "$(get_id $2 glance image-list)" == "" ]; then
         wget --progress=dot:mega -c $3
-        TOS_IMAGE_FILE_NAME=.$(echo $3 | grep -Eo '/[^/]*?$')
-        glance --debug image-create --is-public $1 --name $2 --file $TOS_IMAGE_FILE_NAME --disk-format $4 --container-format $5 || exit 1
+        IMAGE_FILE_NAME=.$(echo $3 | grep -Eo '/[^/]*?$')
+        glance --debug image-create --is-public $1 --name $2 --file $IMAGE_FILE_NAME --disk-format $4 --container-format $5 || exit 1
         echo $?
     fi
 }
@@ -203,12 +203,12 @@ pushd $TOP_DIR/../..
             tenant_create $TOS__IDENTITY__TENANT_NAME
             user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $MEMBER_ROLE_NAME
-            net_create $TOS__IDENTITY__TENANT_NAME 10.0.1.0/24
+            #net_create $TOS__IDENTITY__TENANT_NAME 10.0.1.0/24
 
             tenant_create $TOS__IDENTITY__ALT_TENANT_NAME
             user_create $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $TOS__IDENTITY__ALT_PASSWORD $TOS__IDENTITY__ALT_USERNAME@$TOS__IDENTITY__ALT_TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $MEMBER_ROLE_NAME
-            net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.2.0/24
+            #net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.2.0/24
 
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
