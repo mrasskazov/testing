@@ -13,6 +13,9 @@ if [ -z $OS_AUTH_URL ]; then
 fi
 
 export TESTCASE=${TESTCASE:-tempest/tests}
+export COMPONENT=${COMPONENT:-all}
+export TYPE=${TYPE:-all}
+
 export OS_USERNAME=${OS_USERNAME:-admin}
 export OS_PASSWORD=${OS_PASSWORD:-secrete}
 export OS_TENANT_NAME=${OS_TENANT_NAME:-admin}
@@ -243,7 +246,18 @@ pushd $TOP_DIR/../..
 
         echo "================================================================================="
         echo "Running tempest..."
-        nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
+
+        if [[ "$COMPONENT" != "all" ]] && [[ "$TYPE" != "all" ]]; then
+            nosetests -s -v --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
+        elif [[ "$COMPONENT" != "all" ]]; then
+            nosetests -s -v --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component)" $TESTCASE
+        elif [[ "$TYPE" != "all" ]]; then
+            nosetests -s -v --with-xunit --xunit-file=nosetests.xml --eval-attr "type == '$TYPE'" $TESTCASE
+        else
+            nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
+        fi
+
+        #nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
         TEMPEST_RET=$?
 
         if [ "$DELETE_ENTITIES" = "true" ]; then
