@@ -124,9 +124,9 @@ net_create () {
     NET_TYPE=${5:-$CUR_NET_TYPE}
     CUR_IP_VERSION=$(quantum subnet-show $(quantum subnet-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/ip_version/ {print $4}')
     IP_VERSION=${6:-$CUR_IP_VERSION}
-    ROUTER_NAME=${7:-$1_router}
-    NET_NAME=${8:-${ROUTER_NAME}_net}
-    SUBNET_NAME=${9:-sub_${NET_NAME}}
+    ROUTER_NAME=${7:-router04}
+    NET_NAME=${8:-${1}_net}
+    SUBNET_NAME=${9:-${1}_subnet}
 
     if [ "$(get_id $NET_NAME quantum net-list)" == "" ]; then
         quantum net-create --tenant_id $TENANT_ID $NET_NAME --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
@@ -134,13 +134,13 @@ net_create () {
     NET_ID=$(get_id $NET_NAME quantum net-list)
 
     if [ "$(get_id $SUBNET_NAME quantum subnet-list)" == "" ]; then
-        quantum subnet-create --name sub_$NET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
+        quantum subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
     fi
     SUBNET_ID=$(get_id $SUBNET_NAME quantum subnet-list)
 
-    if [ "$(get_id $ROUTER_NAME quantum router-list)" == "" ]; then
-        quantum router-create --tenant_id $TENANT_ID $ROUTER_NAME || exit 1
-    fi
+    #if [ "$(get_id $ROUTER_NAME quantum router-list)" == "" ]; then
+        #quantum router-create --tenant_id $TENANT_ID $ROUTER_NAME || exit 1
+    #fi
     ROUTER_ID=$(get_id $ROUTER_NAME quantum router-list)
 
     quantum router-interface-add ${ROUTER_ID} ${SUBNET_ID}
@@ -166,7 +166,7 @@ net_delete () {
     quantum router-interface-delete $(get_id $ROUTER_NAME quantum router-list) $(get_id $SUBNET_NAME quantum subnet-list)
     quantum subnet-delete $(get_id $SUBNET_NAME quantum subnet-list)
     quantum net-delete $(get_id $NET_NAME quantum net-list)
-    quantum router-delete $(get_id $ROUTER_NAME quantum router-list)
+    #quantum router-delete $(get_id $ROUTER_NAME quantum router-list)
 }
 
 
@@ -206,12 +206,12 @@ pushd $TOP_DIR/../..
             tenant_create $TOS__IDENTITY__TENANT_NAME
             user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $MEMBER_ROLE_NAME
-            #net_create $TOS__IDENTITY__TENANT_NAME 10.0.1.0/24
+            net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
 
             tenant_create $TOS__IDENTITY__ALT_TENANT_NAME
             user_create $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $TOS__IDENTITY__ALT_PASSWORD $TOS__IDENTITY__ALT_USERNAME@$TOS__IDENTITY__ALT_TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $MEMBER_ROLE_NAME
-            #net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.2.0/24
+            net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
 
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
