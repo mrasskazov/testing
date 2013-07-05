@@ -36,6 +36,9 @@ export IMAGE_NAME_ALT=${IMAGE_NAME_ALT:-tempest-cirros-02}
 export MEMBER_ROLE_NAME=${MEMBER_ROLE_NAME:-Member}
 export DB_HA_HOST=${DB_HA_HOST:-localhost}
 
+export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-admin_net}
+export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
+
 
 ini_param () {
     # TODO: error with not founded section/parameter needed.
@@ -114,6 +117,10 @@ image_create_img () {
 net_create () {
     # tenant_name sip_lease gateway eg_id net_type ip_version router_name net_name subnet_name
     # if [ "$(get_id $2 glance image-list)" == "" ]; then
+    if [ "$1" == "shared" ]; then
+        local SHARED="--shared"
+        shift
+    fi
     TENANT_ID=$(get_id $1 keystone tenant-list)
     IP_LEASE=${2:-10.0.1.0/24}
     DEF_GATEWAY=$(echo $(echo $IP_LEASE | grep -Eo '([0-9]{1,3}\.){3}')1)
@@ -129,7 +136,7 @@ net_create () {
     SUBNET_NAME=${9:-${1}_subnet}
 
     if [ "$(get_id $NET_NAME quantum net-list)" == "" ]; then
-        quantum net-create --tenant_id $TENANT_ID $NET_NAME --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
+        quantum net-create --tenant_id $TENANT_ID $NET_NAME $SHARED --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
     fi
     NET_ID=$(get_id $NET_NAME quantum net-list)
 
@@ -202,6 +209,8 @@ pushd $TOP_DIR/../..
         if [ "$CREATE_ENTITIES" = "true" ]; then
             echo "================================================================================="
             echo "Preparing Tempest's environment..."
+
+            net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
 
             tenant_create $TOS__IDENTITY__TENANT_NAME
             user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true

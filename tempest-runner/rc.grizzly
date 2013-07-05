@@ -24,7 +24,7 @@ export TOS__COMPUTE__FLAVOR_REF_ALT=${TOS__COMPUTE__FLAVOR_REF_ALT:-642}
 
 export TOS__COMPUTE__RUN_SSH=${TOS__COMPUTE__RUN_SSH:-false}
 export TOS__COMPUTE__SSH_USER=${TOS__COMPUTE__SSH_USER:-cirros}
-export TOS__COMPUTE__NETWORK_FOR_SSH=${TOS__COMPUTE__NETWORK_FOR_SSH:-t1_router_net}
+export TOS__COMPUTE__NETWORK_FOR_SSH=${TOS__COMPUTE__NETWORK_FOR_SSH:-${PUBLIC_NETWORK_NAME}}
 export TOS__COMPUTE__IP_VERSION_FOR_SSH=${TOS__COMPUTE__IP_VERSION_FOR_SSH:-4}
 
 export TOS__WHITEBOX__PATH_TO_PRIVATE_KEY=${TOS__WHITEBOX__PATH_TO_PRIVATE_KEY:-/var/lib/puppet/ssh_keys/openstack}
@@ -44,8 +44,8 @@ export TOS__NETWORK__API_VERSION=${TOS__NETWORK__API_VERSION:-v2.0}
 # A large private cidr block from which to allocate smaller blocks for tenant networks. 
 #tenant_network_cidr = 10.100.0.0/16
 # TODO: remove hardcoded net and router name
-export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(quantum net-show net04_ext | awk '/ id / {print $4}')}
-export TOS__NETWORK__PUBLIC_ROUTER_ID=${TOS__NETWORK__PUBLIC_ROUTER_ID:-$(quantum router-show router04| awk '/ id / {print $4}')}
+export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(quantum net-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+export TOS__NETWORK__PUBLIC_ROUTER_ID=${TOS__NETWORK__PUBLIC_ROUTER_ID:-$(quantum router-show $PUBLIC_ROUTER_NAME | awk '/ id / {print $4}')}
 export TOS__NETWORK__QUANTUM_AVAILABLE=${TOS__NETWORK__QUANTUM_AVAILABLE:-true}
 
 
