@@ -36,7 +36,7 @@ export IMAGE_NAME_ALT=${IMAGE_NAME_ALT:-tempest-cirros-02}
 export MEMBER_ROLE_NAME=${MEMBER_ROLE_NAME:-Member}
 export DB_HA_HOST=${DB_HA_HOST:-localhost}
 
-export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-admin_net}
+export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-net04_ext}
 export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
 
 
