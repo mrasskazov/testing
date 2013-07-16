@@ -49,10 +49,10 @@ ini_param () {
     VALUE=$4
     if [ "$SECTION" == "everywhere" ]; then
         # change all the matching
-        sed -i -e "s|\(^$PARAM\s=\).*|\1 $VALUE|" $FILENAME
+        sed -i -e "s|\(^$PARAM\s*=\).*|\1 $VALUE|" $FILENAME
     else
         # change only in '$SECTION'
-        sed -ine "/^\[$SECTION\].*/,/^$PARAM\s=.*/ s|\(^$PARAM\s=\).*|\1 $VALUE|" $FILENAME
+        sed -ine "/^\[$SECTION\].*/,/^$PARAM\s*=.*/ s|\(^$PARAM\s=\).*|\1 $VALUE|" $FILENAME
     fi
 }
 
