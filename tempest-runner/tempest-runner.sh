@@ -160,9 +160,9 @@ net_delete () {
     # tenant_name router_name net_name subnet_name
     # if [ "$(get_id $2 glance image-list)" == "" ]; then
     TENANT_ID=$(get_id $1 keystone tenant-list)
-    ROUTER_NAME=${2:-$1_router}
-    NET_NAME=${3:-${ROUTER_NAME}_net}
-    SUBNET_NAME=${4:-sub_${NET_NAME}}
+    ROUTER_NAME=${2:-$PUBLIC_ROUTER_NAME}
+    NET_NAME=${3:-${1}_net}
+    SUBNET_NAME=${4:-${1}_subnet}
 
     ### EMERGENCY CLEANING ###
     # for r in $(quantum router-list | awk '/t[12]_router/ {print $2}'); do for sn in $(quantum subnet-list | awk '/_net/ {print $2}'); do quantum router-interface-delete $r $sn; done; done
@@ -283,6 +283,7 @@ pushd $TOP_DIR/../..
                 keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
                 net_delete $TOS__IDENTITY__TENANT_NAME
                 net_delete $TOS__IDENTITY__ALT_TENANT_NAME
+                net_delete $TOS__IDENTITY__ADMIN_TENANT_NAME
                 keystone tenant-delete $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
                 keystone tenant-delete $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
             else
