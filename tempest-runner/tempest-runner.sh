@@ -14,7 +14,7 @@ fi
 
 export TESTCASE=${TESTCASE:-tempest/tests}
 export COMPONENT=${COMPONENT:-all}
-export TYPE=${TYPE:-all}
+export TYPE=${TYPE:-smoke}
 
 export OS_USERNAME=${OS_USERNAME:-admin}
 export OS_PASSWORD=${OS_PASSWORD:-secrete}
