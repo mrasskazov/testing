@@ -23,7 +23,7 @@ export OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 
 export REINSTALL_VIRTUALENV=${REINSTALL_VIRTUALENV:-false}
 export CREATE_ENTITIES=${CREATE_ENTITIES:-true}
-export DELETE_ENTITIES=${DELETE_ENTITIES:-false}
+export DELETE_ENTITIES=${DELETE_ENTITIES:-true}
 
 # detect/define some parameters
 export CIRROS_HOST=http://download.cirros-cloud.net/
@@ -269,21 +269,25 @@ pushd $TOP_DIR/../..
         #nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
         TEMPEST_RET=$?
 
+        echo "================================================================================="
         if [ "$DELETE_ENTITIES" = "true" ]; then
-            echo "================================================================================="
-            echo "Clean Tempest's environment..."
-            glance image-delete $(get_id $IMAGE_NAME glance image-list)
-            glance image-delete $(get_id $IMAGE_NAME_ALT glance image-list)
-            nova flavor-delete $TOS__COMPUTE__FLAVOR_REF
-            nova flavor-delete $TOS__COMPUTE__FLAVOR_REF_ALT
-            keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
-            keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
-            keystone user-delete $(get_id $TOS__IDENTITY__USERNAME keystone user-list)
-            keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
-            net_delete $TOS__IDENTITY__TENANT_NAME
-            net_delete $TOS__IDENTITY__ALT_TENANT_NAME
-            keystone tenant-delete $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
-            keystone tenant-delete $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
+            if [ "$TEMPEST_RET" = "0" ]; then
+                echo "Clean Tempest's environment..."
+                glance image-delete $(get_id $IMAGE_NAME glance image-list)
+                glance image-delete $(get_id $IMAGE_NAME_ALT glance image-list)
+                nova flavor-delete $TOS__COMPUTE__FLAVOR_REF
+                nova flavor-delete $TOS__COMPUTE__FLAVOR_REF_ALT
+                keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
+                keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
+                keystone user-delete $(get_id $TOS__IDENTITY__USERNAME keystone user-list)
+                keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
+                net_delete $TOS__IDENTITY__TENANT_NAME
+                net_delete $TOS__IDENTITY__ALT_TENANT_NAME
+                keystone tenant-delete $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
+                keystone tenant-delete $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
+            else
+                echo "Created entities is not deleted because of FAIL"
+            fi
         fi
 
         XML_FILE=$TEMPEST_DIR/nosetests_table.xml
