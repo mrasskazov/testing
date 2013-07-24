@@ -131,7 +131,7 @@ net_create () {
     NET_TYPE=${5:-$CUR_NET_TYPE}
     CUR_IP_VERSION=$(quantum subnet-show $(quantum subnet-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/ip_version/ {print $4}')
     IP_VERSION=${6:-$CUR_IP_VERSION}
-    ROUTER_NAME=${7:-router04}
+    ROUTER_NAME=${7:-$PUBLIC_ROUTER_NAME}
     NET_NAME=${8:-${1}_net}
     SUBNET_NAME=${9:-${1}_subnet}
 
