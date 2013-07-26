@@ -1,16 +1,55 @@
 #!/bin/bash -x
 
 TOP_DIR=$(cd $(dirname "$0") && pwd)
+
 TEMPEST_DIR=$(readlink -f $TOP_DIR/../../tempest)
 if [[ ! -r $TEMPEST_DIR ]]; then
     echo "ERROR: missing tempest dir $TEMPEST_DIR"
     exit 1
 fi
 
-if [ -z $OS_AUTH_URL ]; then
-    echo 'ERROR: Missing $OS_AUTH_URL variable'
-    exit 2
+export OS_AUTH_URL=${OS_AUTH_URL:-auto}
+
+if [ "$OS_AUTH_URL" = "auto" ]; then
+
+    unset OS_AUTH_URL
+
+    ENV_CONF_DIR=$(readlink -f $TOP_DIR/../../fuel_astute)
+    if [[ ! -r $ENV_CONF_DIR ]]; then
+        echo "ERROR: missing environment's configuration dir $ENV_CONF_DIR"
+        exit 1
+    fi
+
+    # get actual environment YAML config and site.pp manifest
+    export MASTER_NODE=$(awk '/role: cobbler/,/public_address/ {print $2}' $(ls $ENV_CONF_DIR/config.* | head -n1) | tail -n1)
+    export CONF_FILE=$TOP_DIR/config.yaml
+    scp root@$MASTER_NODE:/root/config.yaml $CONF_FILE || exit 224
+    export SITEPP_FILE=$TOP_DIR/site.pp
+    scp root@$MASTER_NODE:/etc/puppet/manifests/site.pp $SITEPP_FILE || exit 224
+
+    # detect OS_AUTH_URL
+    export AUTH_PORT=${AUTH_PORT:-5000}
+    export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
+    export AUTH_HOST=$(awk '/^[ \t]*internal_virtual_ip:/ {print $2}' $CONF_FILE)
+    export AUTH_HOST=${AUTH_HOST:-$(awk '/role: primary-controller/,/internal_address/ {print $2}' $CONF_FILE | tail -n1)}
+    export OS_AUTH_URL=${OS_AUTH_URL:-"http://$AUTH_HOST:$AUTH_PORT/$AUTH_API_VERSION/"}
+
+    # detect OS_PASSWORD
+    export OS_PASSWORD=${OS_PASSWORD:-$(awk '/^\$admin_password/ {print $3}' $SITEPP_FILE | cut -d "'" -f2)}
+
 fi
+
+# check OS_AUTH_URL
+export TEST_AUTH_URL=$(wget -qO- $OS_AUTH_URL | grep $AUTH_API_VERSION)
+if [ -z "$TEST_AUTH_URL" ]; then
+    echo "Could not connect to OS_AUTH_URL=$OS_AUTH_URL"
+    exit 1
+fi
+
+
+export AUTH_HOST=${AUTH_HOST:-$(echo $OS_AUTH_URL | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}')}
+export AUTH_PORT=${AUTH_PORT:-$(echo $OS_AUTH_URL | grep -Eo ':([0-9]{1,5})' | cut -d ":" -f2)}
+export AUTH_API_VERSION=${AUTH_API_VERSION:-$(echo $OS_AUTH_URL | grep -Eo 'v([0-9\.])+')}
 
 export TESTCASE=${TESTCASE:-tempest/tests}
 export COMPONENT=${COMPONENT:-all}
@@ -40,7 +79,6 @@ export DB_HA_HOST=${DB_HA_HOST:-localhost}
 
 export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-net04_ext}
 export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
-
 
 ini_param () {
     # TODO: error with not founded section/parameter needed.
