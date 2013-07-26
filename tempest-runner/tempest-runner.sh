@@ -19,7 +19,7 @@ export TYPE=${TYPE:-smoke}
 export TYPE=$(echo ${TYPE})
 
 export OS_USERNAME=${OS_USERNAME:-admin}
-export OS_PASSWORD=${OS_PASSWORD:-secrete}
+export OS_PASSWORD=${OS_PASSWORD:-nova}
 export OS_TENANT_NAME=${OS_TENANT_NAME:-admin}
 export OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 
