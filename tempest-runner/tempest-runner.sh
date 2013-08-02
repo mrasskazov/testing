@@ -1,5 +1,4 @@
 #!/bin/bash -x
-
 TOP_DIR=$(cd $(dirname "$0") && pwd)
 
 TEMPEST_DIR=$(readlink -f $TOP_DIR/../../tempest)
@@ -22,20 +21,33 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     # get actual environment YAML config and site.pp manifest
     export MASTER_NODE=$(awk '/role: cobbler/,/public_address/ {print $2}' $(ls $ENV_CONF_DIR/config.* | head -n1) | tail -n1)
-    export CONF_FILE=$TOP_DIR/config.yaml
-    scp root@$MASTER_NODE:/root/config.yaml $CONF_FILE || exit 224
-    export SITEPP_FILE=$TOP_DIR/site.pp
-    scp root@$MASTER_NODE:/etc/puppet/manifests/site.pp $SITEPP_FILE || exit 224
+
+    # get cluster config via Nailgun API
+    CLUSTER_ID=$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || exit 224
+    CLUSTER_MODE=$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["mode"]') || exit 224
 
     # detect OS_AUTH_URL
     export AUTH_PORT=${AUTH_PORT:-5000}
     export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
-    export AUTH_HOST=$(awk '/^[ \t]*internal_virtual_ip:/ {print $2}' $CONF_FILE)
-    export AUTH_HOST=${AUTH_HOST:-$(awk '/role: primary-controller/,/internal_address/ {print $2}' $CONF_FILE | tail -n1)}
+    if [ "$CLUSTER_MODE" = "multinode" ]; then
+        export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/nodes | \
+            python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if o["role"]=="controller"][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
+    else #ha
+        export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/network_configuration | \
+            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || exit 224
+    fi
+
     export OS_AUTH_URL=${OS_AUTH_URL:-"http://$AUTH_HOST:$AUTH_PORT/$AUTH_API_VERSION/"}
 
-    # detect OS_PASSWORD
-    export OS_PASSWORD=${OS_PASSWORD:-$(awk '/^\$admin_password/ {print $3}' $SITEPP_FILE | cut -d "'" -f2)}
+    # detect credentials
+    export OS_USERNAME=${OS_USERNAME:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/attributes | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["user"]["value"]')} || exit 224
+    export OS_PASSWORD=${OS_PASSWORD:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/attributes | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["password"]["value"]')} || exit 224
+    export OS_TENANT_NAME=${OS_TENANT_NAME:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/attributes | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["tenant"]["value"]')} || exit 224
 
 fi
 
