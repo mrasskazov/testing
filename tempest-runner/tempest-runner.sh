@@ -247,10 +247,10 @@ pushd $TOP_DIR/../..
 
     pushd $TEMPEST_DIR
         ### DEFAULT CONFIG PARAMETERS ###
-        export LAST_COMMITS=$(git log --pretty=oneline --max-count=100)
-        if [ -n "$(echo $LAST_COMMITS | grep a6b85b82adbd371864cd1ee22f6d5b30338bb838)" ]; then
+        export LAST_COMMITS=$(git log --decorate --oneline --max-count=100)
+        if [ -n "$(echo $LAST_COMMITS | grep grizzly)" ]; then
             source $TOP_DIR/rc.grizzly
-        elif [ -n "$(echo $LAST_COMMITS | grep 444c3e64ed1347adcfc4204c1e585e2d91022722)" ]; then
+        elif [ -n "$(echo $LAST_COMMITS | grep folsom)" ]; then
             source $TOP_DIR/rc.folsom
         else
             echo "ERROR: Can not detect Tempest release"
