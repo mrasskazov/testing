@@ -41,13 +41,14 @@ export TOS__IMAGE__TENANT_NAME=${TOS__IMAGE__TENANT_NAME:-${TOS__COMPUTE__TENANT
 
 export TOS__IMAGE__API_VERSION=${TOS__IMAGE__API_VERSION:-v2.0}
 
-export TOS__NETWORK__API_VERSION=${TOS__NETWORK__API_VERSION:-v2.0}
+#export TOS__NETWORK__API_VERSION=${TOS__NETWORK__API_VERSION:-v2.0}
 # A large private cidr block from which to allocate smaller blocks for tenant networks. 
 #tenant_network_cidr = 10.100.0.0/16
 # TODO: remove hardcoded net and router name
-export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(quantum net-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
-export TOS__NETWORK__PUBLIC_ROUTER_ID=${TOS__NETWORK__PUBLIC_ROUTER_ID:-$(quantum router-show $PUBLIC_ROUTER_NAME | awk '/ id / {print $4}')}
-export TOS__NETWORK__QUANTUM_AVAILABLE=${TOS__NETWORK__QUANTUM_AVAILABLE:-true}
+export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(nova network-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+#export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(quantum net-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+#export TOS__NETWORK__PUBLIC_ROUTER_ID=${TOS__NETWORK__PUBLIC_ROUTER_ID:-$(quantum router-show $PUBLIC_ROUTER_NAME | awk '/ id / {print $4}')}
+#export TOS__NETWORK__QUANTUM_AVAILABLE=${TOS__NETWORK__QUANTUM_AVAILABLE:-true}
 
 
 #TODO: prepare options in [boto] section

@@ -89,8 +89,8 @@ export IMAGE_NAME_ALT=${IMAGE_NAME_ALT:-tempest-cirros-02}
 export MEMBER_ROLE_NAME=${MEMBER_ROLE_NAME:-Member}
 export DB_HA_HOST=${DB_HA_HOST:-$AUTH_HOST}
 
-export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-net04_ext}
-export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
+export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-novanetwork}
+#export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
 
 ini_param () {
     # TODO: error with not founded section/parameter needed.
@@ -262,17 +262,17 @@ pushd $TOP_DIR/../..
             echo "================================================================================="
             echo "Preparing Tempest's environment..."
 
-            net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
+            #net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
 
             tenant_create $TOS__IDENTITY__TENANT_NAME
             user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $MEMBER_ROLE_NAME
-            net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
+            #net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
 
             tenant_create $TOS__IDENTITY__ALT_TENANT_NAME
             user_create $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $TOS__IDENTITY__ALT_PASSWORD $TOS__IDENTITY__ALT_USERNAME@$TOS__IDENTITY__ALT_TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $MEMBER_ROLE_NAME
-            net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
+            #net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
 
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
@@ -333,9 +333,9 @@ pushd $TOP_DIR/../..
                 keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
                 keystone user-delete $(get_id $TOS__IDENTITY__USERNAME keystone user-list)
                 keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
-                net_delete $TOS__IDENTITY__TENANT_NAME
-                net_delete $TOS__IDENTITY__ALT_TENANT_NAME
-                net_delete $TOS__IDENTITY__ADMIN_TENANT_NAME
+                #net_delete $TOS__IDENTITY__TENANT_NAME
+                #net_delete $TOS__IDENTITY__ALT_TENANT_NAME
+                #net_delete $TOS__IDENTITY__ADMIN_TENANT_NAME
                 keystone tenant-delete $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
                 keystone tenant-delete $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
             else
