@@ -34,7 +34,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     if [ "$CLUSTER_MODE" = "multinode" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if o["role"]=="controller"][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
-    else #ha
+    elif [ "$CLUSTER_MODE" = "ha" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/network_configuration | \
             python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || exit 224
     fi
@@ -309,16 +309,16 @@ pushd $TOP_DIR/../..
         echo "Running tempest..."
 
         if [[ "$COMPONENT" != "all" ]] && [[ "$TYPE" != "all" ]]; then
-            nosetests -s -v --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
+            nosetests -s -v -e '.*boto.*' --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
         elif [[ "$COMPONENT" != "all" ]]; then
-            nosetests -s -v --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component)" $TESTCASE
+            nosetests -s -v -e '.*boto.*' --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component)" $TESTCASE
         elif [[ "$TYPE" != "all" ]]; then
-            nosetests -s -v --with-xunit --xunit-file=nosetests.xml --eval-attr "type == '$TYPE'" $TESTCASE
+            nosetests -s -v -e '.*boto.*' --with-xunit --xunit-file=nosetests.xml --eval-attr "type == '$TYPE'" $TESTCASE
         else
-            nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
+            nosetests -s -v -e '.*boto.*' --with-xunit --xunit-file=nosetests.xml $TESTCASE
         fi
 
-        #nosetests -s -v --with-xunit --xunit-file=nosetests.xml $TESTCASE
+        #nosetests -s -v -e '.*boto.*' --with-xunit --xunit-file=nosetests.xml $TESTCASE
         TEMPEST_RET=$?
 
         echo "================================================================================="
