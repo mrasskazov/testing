@@ -9,7 +9,7 @@ fi
 
 export OS_AUTH_URL=${OS_AUTH_URL:-auto}
 
-export EXCLUDE_LIST=".*boto.*"
+export EXCLUDE_LIST=".*boto.*|.*quantum.*|.*neutron.*"
 
 if [ "$OS_AUTH_URL" = "auto" ]; then
 
