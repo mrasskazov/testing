@@ -36,11 +36,19 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     if [ "$CLUSTER_MODE" = "multinode" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if o["role"]=="controller"][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
+        export DB_HOST=${DB_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/nodes | \
+            python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if o["role"]=="controller"][0]["network_data"];print [n for n in nd if n["name"]=="management"][0]["ip"].split("/")[0]')} || exit 224
         export EXCLUDE_LIST="$EXCLUDE_LIST|.*object_storage.*"
     elif [ "$CLUSTER_MODE" = "ha" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/network_configuration | \
             python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || exit 224
+        export DB_HOST=${DB_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/clusters/$CLUSTER_ID/network_configuration | \
+            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["management_vip"]')} || exit 224
     fi
+
+    #detect DB_URI
+    DB_URI=$(ssh root@$MASTER_NODE ssh $AUTH_HOST grep 'sql_connection' /etc/nova/nova.conf | awk -F '[ =]' '{print $NF}')
+    DB_URI=$(echo $DB_URI | sed -e "s/@.*\//@$DB_HOST\//")
 
     export OS_AUTH_URL=${OS_AUTH_URL:-"http://$AUTH_HOST:$AUTH_PORT/$AUTH_API_VERSION/"}
 
