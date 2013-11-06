@@ -1,0 +1,12 @@
+Run the Tempest at environment with creating all the needed entities (users, tenants, flavors, images, networks).
+
+1. Dependencies (actual for the Tempest Grizzly)
+
+1.1. Ubuntu 12.04
+
+python-dev python-virtualenv libxml2-dev libxslt1-dev libmysqlclient-dev libpq-dev git-core
+
+1.2. CentOS 6.4
+
+python-devel python-virtualenv libxml2-devel libxslt-devel mysql-devel mysql-client mysql-shared gcc openssl-devel postgresql-devel git-core 
+
