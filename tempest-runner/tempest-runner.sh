@@ -8,6 +8,8 @@ if [[ ! -r $TEMPEST_DIR ]]; then
 fi
 
 export OS_AUTH_URL=${OS_AUTH_URL:-auto}
+export AUTH_PORT=${AUTH_PORT:-5000}
+export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
 
 export EXCLUDE_LIST=".*boto.*|.*quantum.*|.*neutron.*"
 
@@ -31,8 +33,6 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["mode"]') || exit 224
 
     # detect OS_AUTH_URL
-    export AUTH_PORT=${AUTH_PORT:-5000}
-    export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
     if [ "$CLUSTER_MODE" = "multinode" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(ssh root@$MASTER_NODE curl -s -H "Accept: application/json" -X GET http://127.0.0.1:8001/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if o["role"]=="controller"][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
