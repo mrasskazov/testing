@@ -259,7 +259,9 @@ pushd $TOP_DIR/../..
     pushd $TEMPEST_DIR
         ### DEFAULT CONFIG PARAMETERS ###
         export LAST_COMMITS=$(git log --decorate --oneline --max-count=100)
-        if [ -n "$(echo $LAST_COMMITS | grep grizzly)" ]; then
+        if [ -n "$(echo $LAST_COMMITS | grep havana)" ]; then
+            source $TOP_DIR/rc.havana
+        elif [ -n "$(echo $LAST_COMMITS | grep grizzly)" ]; then
             source $TOP_DIR/rc.grizzly
         elif [ -n "$(echo $LAST_COMMITS | grep folsom)" ]; then
             source $TOP_DIR/rc.folsom
