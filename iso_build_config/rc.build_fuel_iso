@@ -1,0 +1,36 @@
+#!/bin/bash -x
+
+# repos
+echo "FUELLIB_REPO = https://github.com/Mirantis/fuel.git" > rc.$JOB_NAME
+echo "NAILGUN_REPO = https://github.com/stackforge/fuel-web.git" >> rc.$JOB_NAME
+echo "ASTUTE_REPO = https://github.com/stackforge/fuel-astute.git" >> rc.$JOB_NAME
+echo "OSTF_REPO = https://github.com/stackforge/fuel-ostf.git" >> rc.$JOB_NAME
+echo "FUELMAIN_REPO = https://github.com/stackforge/fuel-main.git" >> rc.$JOB_NAME
+
+if [ "$FUEL_RELEASE"  =  "4.0" ]; then
+
+    OSCI_MIRROR=4.0-stable
+
+    echo "FUELLIB_COMMIT = havana" >> rc.$JOB_NAME
+    echo "NAILGUN_COMMIT = master" >> rc.$JOB_NAME
+    echo "ASTUTE_COMMIT = master" >> rc.$JOB_NAME
+    echo "OSTF_COMMIT = master" >> rc.$JOB_NAME
+    echo "FUELMAIN_COMMIT = master" >> rc.$JOB_NAME
+
+elif [ "$FUEL_RELEASE"  =  "3.2.1" ]; then
+    
+    OSCI_MIRROR=3.2.1-updates
+
+    echo "FUELLIB_COMMIT = 3.2-fixes" >> rc.$JOB_NAME
+    echo "NAILGUN_COMMIT = 3.2-fixes" >> rc.$JOB_NAME
+    echo "ASTUTE_COMMIT = 3.2-fixes" >> rc.$JOB_NAME
+    echo "OSTF_COMMIT = 3.2-fixes" >> rc.$JOB_NAME
+    echo "FUELMAIN_COMMIT = 3.2-fixes" >> rc.$JOB_NAME
+
+fi
+
+# OSCI
+echo "USE_MIRROR = none" >> rc.$JOB_NAME
+echo "MIRROR_FUEL = http://osci-obs.vm.mirantis.net:82/centos-fuel-${OSCI_MIRROR}/centos" >> rc.$JOB_NAME
+echo "MIRROR_FUEL_UBUNTU = http://osci-obs.vm.mirantis.net:82/ubuntu-fuel-${OSCI_MIRROR}/reprepro" >> rc.$JOB_NAME
+
