@@ -2,7 +2,7 @@
 
 export TOP_DIR=$(cd $(dirname "$0") && pwd)
 
-export JOB_NAME=${1:-just_test}
+export JOB_NAME=${1:-tempest-test-01}
 export JENKINS_URL="http://osci-jenkins.srt.mirantis.net:8080"
 export JENKINS_CLI="${TOP_DIR}/jenkins-cli.jar"
 
