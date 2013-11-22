@@ -247,13 +247,15 @@ pushd $TOP_DIR/../..
     find . -name *.pyc -delete
     if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
         rm -rf venv_tempest
+        virtualenv venv_tempest
+        . venv_tempest/bin/activate
+        pip install -r $TOP_DIR/tempest-runner-pre-requires || exit 1
+        pip install -r $TEMPEST_DIR/tools/pip-requires || exit 1
+        pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
+        pip install -r $TOP_DIR/tempest-runner-requires || exit 1
+    else
+        . venv_tempest/bin/activate
     fi
-    virtualenv venv_tempest
-    . venv_tempest/bin/activate
-    pip install -r $TOP_DIR/tempest-runner-pre-requires || exit 1
-    pip install -r $TEMPEST_DIR/tools/pip-requires || exit 1
-    pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
-    pip install -r $TOP_DIR/tempest-runner-requires || exit 1
 
 
     pushd $TEMPEST_DIR
