@@ -11,7 +11,7 @@ export OS_AUTH_URL=${OS_AUTH_URL:-auto}
 export AUTH_PORT=${AUTH_PORT:-5000}
 export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
 
-export EXCLUDE_LIST=".*boto.*|.*quantum.*|.*neutron.*"
+export EXCLUDE_LIST=".*boto.*|.*quantum.*|.*neutron.*|.*nova_manage.*"
 
 if [ "$OS_AUTH_URL" = "auto" ]; then
 
