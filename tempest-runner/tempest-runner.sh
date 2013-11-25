@@ -248,15 +248,18 @@ pushd $TOP_DIR/../..
     if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
         rm -rf venv_tempest
         virtualenv venv_tempest
-        . venv_tempest/bin/activate
+        source venv_tempest/bin/activate
         pip install -r $TOP_DIR/tempest-runner-pre-requires || exit 1
         pip install -r $TEMPEST_DIR/tools/pip-requires || exit 1
         pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
         pip install -r $TOP_DIR/tempest-runner-requires || exit 1
     else
-        . venv_tempest/bin/activate
+        source venv_tempest/bin/activate
     fi
 
+    for CLIENT in nova cinder glance keystone; do
+        sudo ln -s $(which $CLIENT) /usr/local/bin/
+    done
 
     pushd $TEMPEST_DIR
         ### DEFAULT CONFIG PARAMETERS ###
