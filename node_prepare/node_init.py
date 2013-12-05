@@ -62,15 +62,20 @@ def main():
     #cluster_id = nc.get_cluster_id(cluster_name)
     #cluster = nc.get_cluster(cluster_id)
     nets = nc.get_networks(cluster_id)
-    import pudb; pudb.set_trace()
-    for net in nets['networks']:
-        if net['name'] not in ['fuelweb_admin', 'floating']:
+    for net in env_cfg['node']['networks']:
+        if net['name'] not in ['br0', 'admin', 'floating']:
             pprint('%s' % (str(net)))
-            pprint(nets['networks'].index(net))
-            #iface =
-            #if net['vlan_start'] is not None:
-            #    config_vlan
-
+            nnet = [_ for _ in nets['networks'] if _['name'] == net['alias']][0]
+            pprint('%s' % (str(nnet)))
+            iface = net['iface']
+            if nnet['vlan_start'] is not None:
+                vlan_id = nnet['vlan_start']
+                config_vlan(iface, vlan_id)
+                iface = '%s.%d' % (iface, vlan_id)
+            ip = '/'.join((net['ip'],
+                          (net['ip_network'].split('/')[1])))
+            iface_config(iface, ip)
+            iface_up(iface)
 
     #pprint(nc.list_clusters())
     #pprint(nc.get_root)

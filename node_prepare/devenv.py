@@ -31,6 +31,16 @@ logger = logging.getLogger(__name__)
 logwrap = debug(logger)
 
 
+iface_aliases = {
+    'admin': 'fuelweb_admin',
+    'public': 'public',
+    'floating': 'floating',
+    'management': 'management',
+    'storage': 'storage',
+    'private': 'fixed',
+}
+
+
 def _safe_get_bridge(manager, environment, br_name):
     # connect to external network via host bridge
     #def network_create(
@@ -84,7 +94,8 @@ def add_node(manager, env_name, node_name, template_volume):
         ## tempest_node = environment.node_by_name(name=node_name)
         #exit(2)
 
-    br_net = _safe_get_bridge(manager, environment, 'br0')
+    br_net = _safe_get_bridge(manager, environment,
+                              os.get_env('HOST_BRIDGE', 'br0'))
 
     # TODO: implement create_or_get to host networks
 
@@ -94,7 +105,19 @@ def add_node(manager, env_name, node_name, template_volume):
                              network=br_net,
                              type='bridge')
 
+    job_params = os.getenv('JENKINS_JOB_PARAMS', None)
+    if job_params is not None:
+        job_params = json.load(job_params)
+
     cfg = {
+        'jenkins': {
+            'url': os.getenv('JENKINS_URL',
+                             'http://osci-jenkins.srt.mirantis.net:8080'),
+            # 'keys':
+            'JOB_NAME': os.getenv('JENKINS_JOB_NAME',
+                                  'tempest-fuel-3.2-auto'),
+            'JOB_PARAMS': job_params,
+        },
         'environment': {
             'name': environment.name,
         },
@@ -107,6 +130,7 @@ def add_node(manager, env_name, node_name, template_volume):
                 {
                     'iface': 'eth0',
                     'name': br_net.name,
+                    'alias': None,
                     'ip_network': br_net.ip_network,
                     'ip': None,
                 },
@@ -125,6 +149,7 @@ def add_node(manager, env_name, node_name, template_volume):
                     {
                         'iface': 'eth' + str(len(cfg['node']['networks'])),
                         'name': net.name,
+                        'alias': iface_aliases[net.name],
                         'ip_network': net.ip_network,
                         'ip': str(ip),
                     })

@@ -3,7 +3,7 @@
 export TOP_DIR=$(cd $(dirname "$0") && pwd)
 
 export JOB_NAME=${1:-tempest-fuel-4.0-auto}
-export JENKINS_URL="http://osci-jenkins.srt.mirantis.net:8080"
+export JENKINS_URL=${JENKINS_URL:-"http://osci-jenkins.srt.mirantis.net:8080"}
 export JENKINS_CLI="${TOP_DIR}/jenkins-cli.jar"
 
 export NODE_XML="${TOP_DIR}/node_me.xml"

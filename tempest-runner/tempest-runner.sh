@@ -256,7 +256,7 @@ pushd $TOP_DIR/../..
         pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
         pip install -r $TOP_DIR/tempest-runner-requires || exit 1
     else
-        source venv_tempest/bin/activate
+        source /home/jenkins/venv_tempest/bin/activate
     fi
 
     for CLIENT in nova cinder glance keystone; do
