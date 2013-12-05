@@ -11,7 +11,7 @@ export OS_AUTH_URL=${OS_AUTH_URL:-auto}
 export AUTH_PORT=${AUTH_PORT:-5000}
 export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
 
-export EXCLUDE_LIST=".*boto.*|.*quantum.*|.*neutron.*|.*nova_manage.*|.*object_storage.*"
+export EXCLUDE_LIST=".*boto.*|.*nova_manage.*|.*object_storage.*"
 
 if [ "$OS_AUTH_URL" = "auto" ]; then
 
@@ -102,8 +102,13 @@ export IMAGE_NAME_ALT=${IMAGE_NAME_ALT:-tempest-cirros-02}
 export MEMBER_ROLE_NAME=${MEMBER_ROLE_NAME:-Member}
 export DB_HA_HOST=${DB_HA_HOST:-$AUTH_HOST}
 
-export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-novanetwork}
-#export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
+
+if [ "$IS_NEUTRON_ENABLED" == "true" ]; then
+    export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-net04_ext}
+    export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
+else
+    export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-novanetwork}
+fi
 
 ini_param () {
     # TODO: error with not founded section/parameter needed.
@@ -116,7 +121,7 @@ ini_param () {
         # change all the matching
         sed -i -e "s|\(^$PARAM\).*=.*|\1 = $VALUE|" $FILENAME
     else
-        # change only in '$SECTION'
+        # change only in "$SECTION"
         sed -ine "/^\[$SECTION\].*/,/^$PARAM.*=.*/ s|\(^$PARAM\).*=.*|\1 = $VALUE|" $FILENAME
     fi
 }
@@ -190,35 +195,38 @@ net_create () {
     IP_LEASE=${2:-10.0.1.0/24}
     DEF_GATEWAY=$(echo $(echo $IP_LEASE | grep -Eo '([0-9]{1,3}\.){3}')1)
     GATEWAY=${3:-$DEF_GATEWAY}
-    MAX_SEG_ID=$(for n in $(quantum net-list | grep '^| [a-z0-9]' | grep -v ' id ' | awk '{print $2}'); do quantum net-show $n | awk '/segmentation_id/ {print $4}'; done | sort -g | tail -n1)
+    MAX_SEG_ID=$(for n in $(neutron net-list | grep '^| [a-z0-9]' | grep -v ' id ' | awk '{print $2}'); do neutron net-show $n | awk '/segmentation_id/ {print $4}'; done | sort -g | tail -n1)
     SEG_ID=${4:-$(($MAX_SEG_ID + 1))}
-    CUR_NET_TYPE=$(quantum net-show $(quantum net-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/network_type/ {print $4}')
+    CUR_NET_TYPE=$(neutron net-show $(neutron net-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/network_type/ {print $4}')
     NET_TYPE=${5:-$CUR_NET_TYPE}
-    CUR_IP_VERSION=$(quantum subnet-show $(quantum subnet-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/ip_version/ {print $4}')
+    CUR_IP_VERSION=$(neutron subnet-show $(neutron subnet-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/ip_version/ {print $4}')
     IP_VERSION=${6:-$CUR_IP_VERSION}
     ROUTER_NAME=${7:-$PUBLIC_ROUTER_NAME}
     NET_NAME=${8:-${1}_net}
     SUBNET_NAME=${9:-${1}_subnet}
 
-    if [ "$(get_id $NET_NAME quantum net-list)" == "" ]; then
-        quantum net-create --tenant_id $TENANT_ID $NET_NAME $SHARED --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
-    fi
-    NET_ID=$(get_id $NET_NAME quantum net-list)
+    CUR_PHYS_NET=$(quantum net-show $(quantum net-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/physical_network/ {print $4}')
+    PHYS_NET=${CUR_PHYS_NET}
 
-    if [ "$(get_id $SUBNET_NAME quantum subnet-list)" == "" ]; then
-        quantum subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
+    if [ "$(get_id $NET_NAME neutron net-list)" == "" ]; then
+        neutron net-create --tenant_id $TENANT_ID $NET_NAME $SHARED --provider:physical_network $PHYS_NET --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
     fi
-    SUBNET_ID=$(get_id $SUBNET_NAME quantum subnet-list)
+    NET_ID=$(get_id $NET_NAME neutron net-list)
 
-    #if [ "$(get_id $ROUTER_NAME quantum router-list)" == "" ]; then
-        #quantum router-create --tenant_id $TENANT_ID $ROUTER_NAME || exit 1
+    if [ "$(get_id $SUBNET_NAME neutron subnet-list)" == "" ]; then
+        neutron subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
+    fi
+    SUBNET_ID=$(get_id $SUBNET_NAME neutron subnet-list)
+
+    #if [ "$(get_id $ROUTER_NAME neutron router-list)" == "" ]; then
+        #neutron router-create --tenant_id $TENANT_ID $ROUTER_NAME || exit 1
     #fi
-    ROUTER_ID=$(get_id $ROUTER_NAME quantum router-list)
+    ROUTER_ID=$(get_id $ROUTER_NAME neutron router-list)
 
-    quantum router-interface-add ${ROUTER_ID} ${SUBNET_ID}
+    neutron router-interface-add ${ROUTER_ID} ${SUBNET_ID}
 
     # for external network
-    #quantum router-gateway-set --request-format json $ROUTER_ID $NET_ID
+    #neutron router-gateway-set --request-format json $ROUTER_ID $NET_ID
 }
 
 net_delete () {
@@ -230,15 +238,15 @@ net_delete () {
     SUBNET_NAME=${4:-${1}_subnet}
 
     ### EMERGENCY CLEANING ###
-    # for r in $(quantum router-list | awk '/t[12]_router/ {print $2}'); do for sn in $(quantum subnet-list | awk '/_net/ {print $2}'); do quantum router-interface-delete $r $sn; done; done
-    # quantum subnet-list | awk '/_net/ {print $2}' | xargs -n1 -i% quantum subnet-delete %
-    # quantum net-list | awk '/_net/ {print $2}' | xargs -n1 -i% quantum net-delete %
-    # quantum router-list | awk '/t[12]_router/ {print $2}' | xargs -n1 -i% quantum router-delete %
+    # for r in $(neutron router-list | awk '/t[12]_router/ {print $2}'); do for sn in $(neutron subnet-list | awk '/_net/ {print $2}'); do neutron router-interface-delete $r $sn; done; done
+    # neutron subnet-list | awk '/_net/ {print $2}' | xargs -n1 -i% neutron subnet-delete %
+    # neutron net-list | awk '/_net/ {print $2}' | xargs -n1 -i% neutron net-delete %
+    # neutron router-list | awk '/t[12]_router/ {print $2}' | xargs -n1 -i% neutron router-delete %
 
-    quantum router-interface-delete $(get_id $ROUTER_NAME quantum router-list) $(get_id $SUBNET_NAME quantum subnet-list)
-    quantum subnet-delete $(get_id $SUBNET_NAME quantum subnet-list)
-    quantum net-delete $(get_id $NET_NAME quantum net-list)
-    #quantum router-delete $(get_id $ROUTER_NAME quantum router-list)
+    neutron router-interface-delete $(get_id $ROUTER_NAME neutron router-list) $(get_id $SUBNET_NAME neutron subnet-list)
+    neutron subnet-delete $(get_id $SUBNET_NAME neutron subnet-list)
+    neutron net-delete $(get_id $NET_NAME neutron net-list)
+    #neutron router-delete $(get_id $ROUTER_NAME neutron router-list)
 }
 
 
@@ -282,22 +290,22 @@ pushd $TOP_DIR/../..
             echo "================================================================================="
             echo "Preparing Tempest's environment..."
 
-            #net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
+            [ "$IS_NEUTRON_ENABLED" == "true" ]  && net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
 
             tenant_create $TOS__IDENTITY__TENANT_NAME
             user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $MEMBER_ROLE_NAME
-            #net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
+            [ "$IS_NEUTRON_ENABLED" == "true" ]  && net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
 
             tenant_create $TOS__IDENTITY__ALT_TENANT_NAME
             user_create $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $TOS__IDENTITY__ALT_PASSWORD $TOS__IDENTITY__ALT_USERNAME@$TOS__IDENTITY__ALT_TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $MEMBER_ROLE_NAME
-            #net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
+            [ "$IS_NEUTRON_ENABLED" == "true" ]  && net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
 
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
 
-            # is-public name disk-format IMAGE_LINK container-format
+            [ "$IS_NEUTRON_ENABLED" == "true" ]  && is-public name disk-format IMAGE_LINK container-format
             image_create_img true $IMAGE_NAME $IMAGE_LINK qcow2 bare
             export TOS__COMPUTE__IMAGE_REF=${TOS__COMPUTE__IMAGE_REF:-$(get_id $IMAGE_NAME glance image-list)}
             image_create_img true $IMAGE_NAME_ALT $IMAGE_LINK_ALT qcow2 bare
@@ -353,9 +361,11 @@ pushd $TOP_DIR/../..
                 keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
                 keystone user-delete $(get_id $TOS__IDENTITY__USERNAME keystone user-list)
                 keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
-                #net_delete $TOS__IDENTITY__TENANT_NAME
-                #net_delete $TOS__IDENTITY__ALT_TENANT_NAME
-                #net_delete $TOS__IDENTITY__ADMIN_TENANT_NAME
+                if [ "$IS_NEUTRON_ENABLED" == "true" ]; then
+                    net_delete $TOS__IDENTITY__TENANT_NAME
+                    net_delete $TOS__IDENTITY__ALT_TENANT_NAME
+                    net_delete $TOS__IDENTITY__ADMIN_TENANT_NAME
+                fi
                 keystone tenant-delete $(get_id $TOS__IDENTITY__TENANT_NAME keystone tenant-list)
                 keystone tenant-delete $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
             else
