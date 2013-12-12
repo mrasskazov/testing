@@ -23,16 +23,12 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     # get cluster config via Nailgun API
     CLUSTER_ID=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || exit 224
-    echo "CLUSTER_ID = $CLUSTER_ID"
     CLUSTER_MODE=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["mode"]') || exit 224
-    echo "CLUSTER_MODE=$CLUSTER_MODE"
-    CLUSTER_NET_PROVIDER=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+    export CLUSTER_NET_PROVIDER=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_provider"]') || exit 224
-    echo "CLUSTER_NET_PROVIDER=$CLUSTER_NET_PROVIDER"
     CLUSTER_NET_SEGMENT_TYPE=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_segment_type"]') || exit 224
-    echo "CLUSTER_NET_SEGMENT_TYPE=$CLUSTER_NET_SEGMENT_TYPE"
 
     # detect OS_AUTH_URL
     if [ "$CLUSTER_MODE" = "multinode" ]; then
@@ -57,13 +53,10 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     # detect credentials
     export OS_USERNAME=${OS_USERNAME:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["user"]["value"]')} || exit 224
-    echo "OS_USERNAME=$OS_USERNAME"
     export OS_PASSWORD=${OS_PASSWORD:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["password"]["value"]')} || exit 224
-    echo "OS_PASSWORD=$OS_PASSWORD"
     export OS_TENANT_NAME=${OS_TENANT_NAME:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["tenant"]["value"]')} || exit 224
-    echo "OS_TENANT_NAME=$OS_TENANT_NAME"
 
     echo ""
     curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/$CLUSTER_NET_PROVIDER
@@ -111,7 +104,7 @@ export MEMBER_ROLE_NAME=${MEMBER_ROLE_NAME:-Member}
 export DB_HA_HOST=${DB_HA_HOST:-$AUTH_HOST}
 
 
-if [ "$IS_NEUTRON_ENABLED" == "true" ]; then
+if [ "$CLUSTER_NET_PROVIDER" == "neutron" ]; then
     export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-net04_ext}
     export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
 else
@@ -300,22 +293,22 @@ pushd $TOP_DIR/../..
             echo "================================================================================="
             echo "Preparing Tempest's environment..."
 
-            [ "$IS_NEUTRON_ENABLED" == "true" ]  && net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
+            [ "$CLUSTER_NET_PROVIDER" == "neutron" ]  && net_create shared $TOS__IDENTITY__ADMIN_TENANT_NAME 10.0.131.0/24
 
             tenant_create $TOS__IDENTITY__TENANT_NAME
             user_create $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $TOS__IDENTITY__PASSWORD $TOS__IDENTITY__USERNAME@$TOS__IDENTITY__TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__USERNAME $TOS__IDENTITY__TENANT_NAME $MEMBER_ROLE_NAME
-            [ "$IS_NEUTRON_ENABLED" == "true" ]  && net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
+            [ "$CLUSTER_NET_PROVIDER" == "neutron" ]  && net_create $TOS__IDENTITY__TENANT_NAME 10.0.132.0/24
 
             tenant_create $TOS__IDENTITY__ALT_TENANT_NAME
             user_create $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $TOS__IDENTITY__ALT_PASSWORD $TOS__IDENTITY__ALT_USERNAME@$TOS__IDENTITY__ALT_TENANT_NAME.qa true
             user_role_add $TOS__IDENTITY__ALT_USERNAME $TOS__IDENTITY__ALT_TENANT_NAME $MEMBER_ROLE_NAME
-            [ "$IS_NEUTRON_ENABLED" == "true" ]  && net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
+            [ "$CLUSTER_NET_PROVIDER" == "neutron" ]  && net_create $TOS__IDENTITY__ALT_TENANT_NAME 10.0.133.0/24
 
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
 
-            [ "$IS_NEUTRON_ENABLED" == "true" ]  && is-public name disk-format IMAGE_LINK container-format
+            [ "$CLUSTER_NET_PROVIDER" == "neutron" ]  && is-public name disk-format IMAGE_LINK container-format
             image_create_img true $IMAGE_NAME $IMAGE_LINK qcow2 bare
             export TOS__COMPUTE__IMAGE_REF=${TOS__COMPUTE__IMAGE_REF:-$(get_id $IMAGE_NAME glance image-list)}
             image_create_img true $IMAGE_NAME_ALT $IMAGE_LINK_ALT qcow2 bare
@@ -371,7 +364,7 @@ pushd $TOP_DIR/../..
                 keystone user-role-remove --user-id $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list) --role-id $(get_id $MEMBER_ROLE_NAME keystone role-list) --tenant-id $(get_id $TOS__IDENTITY__ALT_TENANT_NAME keystone tenant-list)
                 keystone user-delete $(get_id $TOS__IDENTITY__USERNAME keystone user-list)
                 keystone user-delete $(get_id $TOS__IDENTITY__ALT_USERNAME keystone user-list)
-                if [ "$IS_NEUTRON_ENABLED" == "true" ]; then
+                if [ "$CLUSTER_NET_PROVIDER" == "neutron" ]; then
                     net_delete $TOS__IDENTITY__TENANT_NAME
                     net_delete $TOS__IDENTITY__ALT_TENANT_NAME
                     net_delete $TOS__IDENTITY__ADMIN_TENANT_NAME
