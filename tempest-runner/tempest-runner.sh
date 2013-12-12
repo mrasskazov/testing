@@ -18,7 +18,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     unset OS_AUTH_URL
 
     ADMIN_IP=$(virsh net-dumpxml ${ENV}_admin | grep -P "(\d+\.){3}"  -o | awk '{print $0"2"}')
-    API_URL="http://$ADMIN_IP:8000/"
+    API_URL="http://$ADMIN_IP:8000"
 
     # get cluster config via Nailgun API
     CLUSTER_ID=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
