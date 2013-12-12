@@ -308,7 +308,7 @@ pushd $TOP_DIR/../..
             flavor_create true f64_1 $TOS__COMPUTE__FLAVOR_REF 64 0 1
             flavor_create true f64_2 $TOS__COMPUTE__FLAVOR_REF_ALT 64 0 1
 
-            [ "$CLUSTER_NET_PROVIDER" == "neutron" ]  && is-public name disk-format IMAGE_LINK container-format
+            # is-public name disk-format IMAGE_LINK container-format
             image_create_img true $IMAGE_NAME $IMAGE_LINK qcow2 bare
             export TOS__COMPUTE__IMAGE_REF=${TOS__COMPUTE__IMAGE_REF:-$(get_id $IMAGE_NAME glance image-list)}
             image_create_img true $IMAGE_NAME_ALT $IMAGE_LINK_ALT qcow2 bare
