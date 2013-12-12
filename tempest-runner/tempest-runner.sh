@@ -17,33 +17,33 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     unset OS_AUTH_URL
 
-    #ENV_CONF_DIR=$(readlink -f $TOP_DIR/../../fuel_astute)
-    #if [[ ! -r $ENV_CONF_DIR ]]; then
-    #    echo "ERROR: missing environment's configuration dir $ENV_CONF_DIR"
-    #    exit 1
-    #fi
-
-    # get actual environment YAML config and site.pp manifest
-    export MASTER_NODE=$(cat ~/node_init.json | python -c 'import json,sys;obj=json.load(sys.stdin);print obj["nailgun"]["ip_address"]') || exit 224
-
+    ADMIN_IP=$(virsh net-dumpxml ${ENV}_admin | grep -P "(\d+\.){3}"  -o | awk '{print $0"2"}')
+    API_URL="http://$ADMIN_IP:8000/"
 
     # get cluster config via Nailgun API
-    CLUSTER_ID=$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/ | \
+    CLUSTER_ID=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || exit 224
-    CLUSTER_MODE=$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/ | \
+    echo "CLUSTER_ID = $CLUSTER_ID"
+    CLUSTER_MODE=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["mode"]') || exit 224
+    echo "CLUSTER_MODE=$CLUSTER_MODE"
+    CLUSTER_NET_PROVIDER=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_provider"]') || exit 224
+    echo "CLUSTER_NET_PROVIDER=$CLUSTER_NET_PROVIDER"
+    CLUSTER_NET_SEGMENT_TYPE=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_segment_type"]') || exit 224
+    echo "CLUSTER_NET_SEGMENT_TYPE=$CLUSTER_NET_SEGMENT_TYPE"
 
     # detect OS_AUTH_URL
     if [ "$CLUSTER_MODE" = "multinode" ]; then
-        export AUTH_HOST=${AUTH_HOST:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/nodes | \
+        export AUTH_HOST=${AUTH_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
-        export DB_HOST=${DB_HOST:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/nodes | \
+        export DB_HOST=${DB_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="management"][0]["ip"].split("/")[0]')} || exit 224
-        export EXCLUDE_LIST="$EXCLUDE_LIST|.*object_storage.*"
-    elif [ "$CLUSTER_MODE" = "ha" ]; then
-        export AUTH_HOST=${AUTH_HOST:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/$CLUSTER_ID/network_configuration | \
+    elif [ "$CLUSTER_MODE" = "ha_compact" ]; then
+        export AUTH_HOST=${AUTH_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
             python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || exit 224
-        export DB_HOST=${DB_HOST:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/$CLUSTER_ID/network_configuration | \
+        export DB_HOST=${DB_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
             python -c 'import json,sys;obj=json.load(sys.stdin);print obj["management_vip"]')} || exit 224
     fi
 
@@ -51,15 +51,23 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     #DB_URI=$(ssh root@$AUTH_HOST grep 'sql_connection' /etc/nova/nova.conf | awk -F '[ =]' '{print $NF}')
     #DB_URI=$(echo $DB_URI | sed -e "s/@.*\//@$DB_HOST\//")
 
+    # detect OS_AUTH_URL
     export OS_AUTH_URL=${OS_AUTH_URL:-"http://$AUTH_HOST:$AUTH_PORT/$AUTH_API_VERSION/"}
 
     # detect credentials
-    export OS_USERNAME=${OS_USERNAME:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/$CLUSTER_ID/attributes | \
+    export OS_USERNAME=${OS_USERNAME:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["user"]["value"]')} || exit 224
-    export OS_PASSWORD=${OS_PASSWORD:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/$CLUSTER_ID/attributes | \
+    echo "OS_USERNAME=$OS_USERNAME"
+    export OS_PASSWORD=${OS_PASSWORD:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["password"]["value"]')} || exit 224
-    export OS_TENANT_NAME=${OS_TENANT_NAME:-$(curl -s -H "Accept: application/json" -X GET http://${MASTER_NODE}:8000/api/clusters/$CLUSTER_ID/attributes | \
+    echo "OS_PASSWORD=$OS_PASSWORD"
+    export OS_TENANT_NAME=${OS_TENANT_NAME:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["tenant"]["value"]')} || exit 224
+    echo "OS_TENANT_NAME=$OS_TENANT_NAME"
+
+    echo ""
+    curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/$CLUSTER_NET_PROVIDER
+    echo "" 
 
 fi
 
