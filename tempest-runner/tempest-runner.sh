@@ -261,6 +261,25 @@ net_delete () {
     #neutron router-delete $(get_id $ROUTER_NAME neutron router-list)
 }
 
+detect_tempest_release () {
+    if [ -z "$TEMPEST_RELEASE" ]; then
+        DIR=${1:-TEMPEST_DIR}
+        pushd ${DIR}
+            export LAST_COMMITS=$(git log --decorate --oneline --max-count=100)
+            if [ -n "$(echo $LAST_COMMITS | grep havana)" ]; then
+                TEMPEST_RELEASE=havana
+            elif [ -n "$(echo $LAST_COMMITS | grep grizzly)" ]; then
+                TEMPEST_RELEASE=grizzly
+            elif [ -n "$(echo $LAST_COMMITS | grep folsom)" ]; then
+                TEMPEST_RELEASE=folsom
+            else
+                echo "ERROR: Can not detect Tempest release"
+                exit 1
+            fi
+        popd
+    fi
+}
+
 
 pushd $TOP_DIR/../..
     echo "================================================================================="
@@ -285,17 +304,8 @@ pushd $TOP_DIR/../..
 
     pushd $TEMPEST_DIR
         ### DEFAULT CONFIG PARAMETERS ###
-        export LAST_COMMITS=$(git log --decorate --oneline --max-count=100)
-        if [ -n "$(echo $LAST_COMMITS | grep havana)" ]; then
-            source $TOP_DIR/rc.havana
-        elif [ -n "$(echo $LAST_COMMITS | grep grizzly)" ]; then
-            source $TOP_DIR/rc.grizzly
-        elif [ -n "$(echo $LAST_COMMITS | grep folsom)" ]; then
-            source $TOP_DIR/rc.folsom
-        else
-            echo "ERROR: Can not detect Tempest release"
-            exit 1
-        fi
+        detect_tempest_release
+        source $TOP_DIR/rc.${TEMPEST_RELEASE}
 
 
         if [ "$CREATE_ENTITIES" = "true" ]; then
