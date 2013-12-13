@@ -19,27 +19,28 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     ADMIN_IP=$(virsh net-dumpxml ${ENV}_admin | grep -P "(\d+\.){3}"  -o | awk '{print $0"2"}')
     API_URL="http://$ADMIN_IP:8000"
+    NAILGUN="curl -s -H \"Accept: application/json\" -X GET ${API_URL}"
 
     # get cluster config via Nailgun API
-    CLUSTER_ID=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+    CLUSTER_ID=$(${NAILGUN}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || exit 224
-    CLUSTER_MODE=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+    CLUSTER_MODE=$(${NAILGUN}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["mode"]') || exit 224
-    export CLUSTER_NET_PROVIDER=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+    export CLUSTER_NET_PROVIDER=$(${NAILGUN}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_provider"]') || exit 224
-    CLUSTER_NET_SEGMENT_TYPE=$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/ | \
+    CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_segment_type"]') || exit 224
 
     # detect OS_AUTH_URL
     if [ "$CLUSTER_MODE" = "multinode" ]; then
-        export AUTH_HOST=${AUTH_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/nodes | \
+        export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
-        export DB_HOST=${DB_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/nodes | \
+        export DB_HOST=${DB_HOST:-$(${NAILGUN}/api/nodes | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="management"][0]["ip"].split("/")[0]')} || exit 224
     elif [ "$CLUSTER_MODE" = "ha_compact" ]; then
-        export AUTH_HOST=${AUTH_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
+        export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
             python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || exit 224
-        export DB_HOST=${DB_HOST:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
+        export DB_HOST=${DB_HOST:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
             python -c 'import json,sys;obj=json.load(sys.stdin);print obj["management_vip"]')} || exit 224
     fi
 
@@ -51,15 +52,15 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     export OS_AUTH_URL=${OS_AUTH_URL:-"http://$AUTH_HOST:$AUTH_PORT/$AUTH_API_VERSION/"}
 
     # detect credentials
-    export OS_USERNAME=${OS_USERNAME:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
+    export OS_USERNAME=${OS_USERNAME:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["user"]["value"]')} || exit 224
-    export OS_PASSWORD=${OS_PASSWORD:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
+    export OS_PASSWORD=${OS_PASSWORD:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["password"]["value"]')} || exit 224
-    export OS_TENANT_NAME=${OS_TENANT_NAME:-$(curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/attributes | \
+    export OS_TENANT_NAME=${OS_TENANT_NAME:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["tenant"]["value"]')} || exit 224
 
     echo ""
-    curl -s -H "Accept: application/json" -X GET ${API_URL}/api/clusters/$CLUSTER_ID/network_configuration/$CLUSTER_NET_PROVIDER
+    ${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/$CLUSTER_NET_PROVIDER
     echo "" 
 
 fi
