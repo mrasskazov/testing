@@ -24,12 +24,20 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     # get cluster config via Nailgun API
     CLUSTER_ID=$(${NAILGUN}/api/clusters/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || exit 224
-    CLUSTER_MODE=$(${NAILGUN}/api/clusters/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["mode"]') || exit 224
-    export CLUSTER_NET_PROVIDER=$(${NAILGUN}/api/clusters/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_provider"]') || exit 224
-    CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["net_segment_type"]') || exit 224
+    CLUSTER_MODE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["mode"]') || exit 224
+    export CLUSTER_NET_PROVIDER=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_provider"]') || exit 224
+    CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || exit 224
+    CLUSTER_RELEASE_ID=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release"]["id"]') || exit 224
+    CLUSTER_OPERATING_SYSTEM=$(${NAILGUN}/api/releases/ | \
+        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['operating_system']") || exit 224
+    CLUSTER_VERSION=$(${NAILGUN}/api/releases/ | \
+        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['version']") || exit 224
+    CLUSTER_VERSION_NAME=$(${NAILGUN}/api/releases/ | \
+        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['name']") || exit 224
 
     # detect OS_AUTH_URL
     if [ "$CLUSTER_MODE" = "multinode" ]; then
