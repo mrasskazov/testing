@@ -280,6 +280,21 @@ detect_tempest_release () {
     fi
 }
 
+map_os_release () {
+    OS_VERSION=$(echo $CLUSTER_VERSION | grep -Eo '[0-9]+\.[0-9]+')
+    case "$OS_VERSION" in
+        "2013.1")
+            OS_RELEASE=grizzly
+            ;;
+        "2013.2")
+            OS_RELEASE=havana
+            ;;
+        *)
+            echo "ERROR: Can not map OpenStack release"
+            exit 1
+    esac
+}
+
 
 pushd $TOP_DIR/../..
     echo "================================================================================="
@@ -304,6 +319,7 @@ pushd $TOP_DIR/../..
 
     pushd $TEMPEST_DIR
         ### DEFAULT CONFIG PARAMETERS ###
+        map_os_release
         detect_tempest_release
         source $TOP_DIR/rc.${TEMPEST_RELEASE}
 
