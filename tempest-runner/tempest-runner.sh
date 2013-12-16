@@ -308,33 +308,80 @@ fetch_tempest_repo () {
 install_virtualenv () {
     DIR=venv_tempest_${OS_RELEASE}
     pushd $HOME
-        if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
-            rm -rf $DIR
-        fi
-        if [[ ! -r $DIR ]]; then
-            virtualenv $DIR
-            REINSTALL_VIRTUALENV=true
-        fi
+        touch ${DIR}.reinstalling
         source $DIR/bin/activate
-        if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
-            pip install -r $TOP_DIR/tempest-runner-pre-requires || exit 1
-            case "$OS_RELEASE" in
-                "grizzly")
-                    pip install -r $TEMPEST_DIR/tools/pip-requires || exit 1
-                    pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
-                    ;;
-                "havana")
-                    pip install -r $TEMPEST_DIR/requirements.txt || exit 1
-                    pip install -r $TEMPEST_DIR/test-requirements.txt || exit 1
-                    ;;
-                *)
-                    echo "ERROR: Can not install virtual environment for '$OS_RELEASE' OpenStack release"
-                    exit 1
-            esac
-            pip install -r $TOP_DIR/tempest-runner-requires || exit 1
-        fi
-
+        pip install -r $TOP_DIR/tempest-runner-pre-requires || (rm ${DIR}.reinstalling ; exit 1)
+        case "$OS_RELEASE" in
+            "grizzly")
+                pip install -r $TEMPEST_DIR/tools/pip-requires || (rm ${DIR}.reinstalling ; exit 1)
+                pip install -r $TEMPEST_DIR/tools/test-requires || (rm ${DIR}.reinstalling ; exit 1)
+                ;;
+            "havana")
+                pip install -r $TEMPEST_DIR/requirements.txt || (rm ${DIR}.reinstalling ; exit 1)
+                pip install -r $TEMPEST_DIR/test-requirements.txt || (rm ${DIR}.reinstalling ; exit 1)
+                ;;
+            *)
+                echo "ERROR: Can not install virtual environment for '$OS_RELEASE' OpenStack release"
+                rm ${DIR}.reinstalling
+                exit 1
+        esac
+        pip install -r $TOP_DIR/tempest-runner-requires || (rm ${DIR}.reinstalling ; exit 1)
+        deactivate
+        mv ${DIR}.reinstalling ${DIR}.done
     popd
+}
+
+use_virtualenv () {
+    # start | stop
+    DIR=venv_tempest_${OS_RELEASE}
+    ACTION=${1:-start}
+    if [ "$ACTION" = "start" ]; then
+        pushd $HOME
+            mkdir -p /tmp/${DIR}
+            touch /tmp/${DIR}/${DIR}.busy$(ls /tmp/${DIR}/ | wc -l)
+
+            WAIT_VENV=${WAIT_VENV:-60}
+            while [[ -f "${DIR}.reinstalling" ]]; do
+                WAIT_VENV=$(( $WAIT_VENV - 10 ))
+                if [ "$WAIT_VENV" -lt 0 ]; then
+                    echo "Timeout waiting for virtual environment reinstalled. Can not use"
+                    exit 2
+                fi
+                sleep 10
+            done
+
+            if [[ (-r $DIR) && ("$REINSTALL_VIRTUALENV" == true) ]]; then
+                WAIT_VENV=${WAIT_VENV:-80}
+                while [ "$(ls /tmp/${DIR}/ | wc -l)" -gt 1 ]; do
+                    WAIT_VENV=$(( $WAIT_VENV - 10 ))
+                    if [ "$WAIT_VENV" -lt 0 ]; then
+                        echo "Timeout waiting for virtual environment freed. Can not reinstall"
+                        exit 2
+                    fi
+                    sleep 10
+                done
+                rm -rf $DIR
+            fi
+
+            if [[ ! -r $DIR ]]; then
+                touch ${DIR}.reinstalling
+                virtualenv $DIR
+                REINSTALL_VIRTUALENV=true
+            fi
+
+            if [[ ! -e ${DIR}.done ]]; then
+                touch ${DIR}.reinstalling
+                install_virtualenv
+            fi
+
+            source $DIR/bin/activate
+
+        popd
+
+    else
+        deactivate
+        rm /tmp/${DIR}/$(ls /tmp/${DIR}/ | tail -n 1)
+    fi
 }
 
 
@@ -347,7 +394,7 @@ pushd $TOP_DIR/../..
     [ -z "$OS_RELEASE" ] && exit 1
 
     fetch_tempest_repo
-    install_virtualenv
+    use_virtualenv start
 
 
     ### DEFAULT CONFIG PARAMETERS ###
@@ -456,7 +503,7 @@ pushd $TOP_DIR/../..
             sed -ie "0,/\?></ s/?></?><?xml-stylesheet type=\"text\/xsl\" href=\"$XSL_FILE\"?></" "$XML_FILE"
         fi
 
-        deactivate
+        use_virtualenv stop
     popd
 popd
 exit $TEMPEST_RET
