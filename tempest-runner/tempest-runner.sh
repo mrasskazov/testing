@@ -351,22 +351,27 @@ use_virtualenv () {
             mkdir -p /tmp/${DIR}
             touch /tmp/${DIR}/${DIR}.busy$(ls /tmp/${DIR}/ | wc -l)
 
-            WAIT_VENV=${WAIT_VENV:-60}
+            WAIT_VENV=${WAIT_VENV:-600}
             while [[ -f "${DIR}.reinstalling" ]]; do
+                if [[ ! -r $DIR ]]; then
+                    rm ${DIR}.reinstalling
+                fi
                 WAIT_VENV=$(( $WAIT_VENV - 10 ))
                 if [ "$WAIT_VENV" -lt 0 ]; then
                     echo "Timeout waiting for virtual environment reinstalled. Can not use"
+                    rm /tmp/${DIR}/$(ls /tmp/${DIR}/ | tail -n 1)
                     exit 2
                 fi
                 sleep 10
             done
 
             if [[ (-r $DIR) && ("$REINSTALL_VIRTUALENV" == true) ]]; then
-                WAIT_VENV=${WAIT_VENV:-80}
+                WAIT_VENV=${WAIT_VENV:-8000}
                 while [ "$(ls /tmp/${DIR}/ | wc -l)" -gt 1 ]; do
                     WAIT_VENV=$(( $WAIT_VENV - 10 ))
                     if [ "$WAIT_VENV" -lt 0 ]; then
                         echo "Timeout waiting for virtual environment freed. Can not reinstall"
+                        rm /tmp/${DIR}/$(ls /tmp/${DIR}/ | tail -n 1)
                         exit 2
                     fi
                     sleep 10
@@ -376,6 +381,7 @@ use_virtualenv () {
 
             if [[ ! -r $DIR ]]; then
                 touch ${DIR}.reinstalling
+                rm ${DIR}.done
                 virtualenv $DIR
                 REINSTALL_VIRTUALENV=true
             fi
