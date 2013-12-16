@@ -9,6 +9,21 @@ export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
 
 export EXCLUDE_LIST=".*boto.*|.*nova_manage.*"
 
+map_os_release () {
+    OS_VERSION=$(echo $CLUSTER_VERSION | grep -Eo '[0-9]+\.[0-9]+')
+    case "$OS_VERSION" in
+        "2013.1")
+            OS_RELEASE=grizzly
+            ;;
+        "2013.2")
+            OS_RELEASE=havana
+            ;;
+        *)
+            echo "ERROR: Can not map OpenStack release"
+            exit 1
+    esac
+}
+
 if [ "$OS_AUTH_URL" = "auto" ]; then
 
     unset OS_AUTH_URL
@@ -275,21 +290,6 @@ detect_tempest_release () {
             fi
         popd
     fi
-}
-
-map_os_release () {
-    OS_VERSION=$(echo $CLUSTER_VERSION | grep -Eo '[0-9]+\.[0-9]+')
-    case "$OS_VERSION" in
-        "2013.1")
-            OS_RELEASE=grizzly
-            ;;
-        "2013.2")
-            OS_RELEASE=havana
-            ;;
-        *)
-            echo "ERROR: Can not map OpenStack release"
-            exit 1
-    esac
 }
 
 fetch_tempest_repo () {
