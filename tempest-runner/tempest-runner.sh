@@ -352,7 +352,7 @@ pushd $TOP_DIR/../..
 
     ### DEFAULT CONFIG PARAMETERS ###
     #detect_tempest_release
-    source $TOP_DIR/rc.${TEMPEST_RELEASE}
+    source $TOP_DIR/rc.${OS_RELEASE}
 
     for CLIENT in nova cinder glance keystone; do
         sudo ln -s $(which $CLIENT) /usr/local/bin/
