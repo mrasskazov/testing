@@ -295,7 +295,7 @@ detect_tempest_release () {
 fetch_tempest_repo () {
     pushd $TOP_DIR/../..
         TEMPEST_REPO=${TEMPEST_REPO:-https://github.com/Mirantis/tempest.git}
-        TEMPEST_REFSPEC={TEMPEST_REFSPEC:-$TEMPEST_RELEASE}
+        TEMPEST_REFSPEC=${TEMPEST_REFSPEC:-$TEMPEST_RELEASE}
         if [[ ! -r $TEMPEST_DIR ]]; then
             git clone TEMPEST_REPO
         fi
