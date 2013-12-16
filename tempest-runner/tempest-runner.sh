@@ -2,10 +2,6 @@
 TOP_DIR=$(cd $(dirname "$0") && pwd)
 
 TEMPEST_DIR=$(readlink -f $TOP_DIR/../../tempest)
-if [[ ! -r $TEMPEST_DIR ]]; then
-    echo "ERROR: missing tempest dir $TEMPEST_DIR"
-    exit 1
-fi
 
 export OS_AUTH_URL=${OS_AUTH_URL:-auto}
 export AUTH_PORT=${AUTH_PORT:-5000}
@@ -36,6 +32,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
         python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['operating_system']") || exit 224
     CLUSTER_VERSION=$(${NAILGUN}/api/releases/ | \
         python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['version']") || exit 224
+    map_os_release
     CLUSTER_VERSION_NAME=$(${NAILGUN}/api/releases/ | \
         python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['name']") || exit 224
 
@@ -295,33 +292,73 @@ map_os_release () {
     esac
 }
 
+fetch_tempest_repo () {
+    pushd $TOP_DIR/../..
+        TEMPEST_REPO=${TEMPEST_REPO:-https://github.com/Mirantis/tempest.git}
+        TEMPEST_REFSPEC={TEMPEST_REFSPEC:-$TEMPEST_RELEASE}
+        if [[ ! -r $TEMPEST_DIR ]]; then
+            git clone TEMPEST_REPO
+        fi
+        pushd $TEMPEST_DIR
+            git fetch $TEMPEST_REPO $TEMPEST_REFSPEC && git checkout FETCH_HEAD
+        popd
+    popd
+}
+
+install_virtualenv () {
+    DIR=venv_tempest_${OS_RELEASE}
+    pushd $HOME
+        if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
+            rm -rf $DIR
+        fi
+        if [[ ! -r $DIR ]]; then
+            virtualenv $DIR
+            REINSTALL_VIRTUALENV=true
+        fi
+        source $DIR/bin/activate
+        if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
+            pip install -r $TOP_DIR/tempest-runner-pre-requires || exit 1
+            case "$OS_RELEASE" in
+                "grizzly")
+                    pip install -r $TEMPEST_DIR/tools/pip-requires || exit 1
+                    pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
+                    ;;
+                "havana")
+                    pip install -r $TEMPEST_DIR/requirements.txt || exit 1
+                    pip install -r $TEMPEST_DIR/test-requirements.txt || exit 1
+                    ;;
+                *)
+                    echo "ERROR: Can not install virtual environment for '$OS_RELEASE' OpenStack release"
+                    exit 1
+            esac
+            pip install -r $TOP_DIR/tempest-runner-requires || exit 1
+        fi
+
+    popd
+}
+
 
 pushd $TOP_DIR/../..
     echo "================================================================================="
-    route -n
-    echo "================================================================================="
     find . -name *.pyc -delete
-    if [ "$REINSTALL_VIRTUALENV" = "true" ]; then
-        rm -rf venv_tempest
-        virtualenv venv_tempest
-        source venv_tempest/bin/activate
-        pip install -r $TOP_DIR/tempest-runner-pre-requires || exit 1
-        pip install -r $TEMPEST_DIR/tools/pip-requires || exit 1
-        pip install -r $TEMPEST_DIR/tools/test-requires || exit 1
-        pip install -r $TOP_DIR/tempest-runner-requires || exit 1
-    else
-        source /home/jenkins/venv_tempest/bin/activate
-    fi
+
+    #[ -n "$OS_RELEASE" ] && TEMPEST_RELEASE=fuel/stable/$OS_RELEASE || exit 1
+    TEMPEST_RELEASE=${TEMPEST_REFSPEC:-fuel/stable/$OS_RELEASE}
+    [ -z "$OS_RELEASE" ] && exit 1
+
+    fetch_tempest_repo
+    install_virtualenv
+
+
+    ### DEFAULT CONFIG PARAMETERS ###
+    #detect_tempest_release
+    source $TOP_DIR/rc.${TEMPEST_RELEASE}
 
     for CLIENT in nova cinder glance keystone; do
         sudo ln -s $(which $CLIENT) /usr/local/bin/
     done
 
     pushd $TEMPEST_DIR
-        ### DEFAULT CONFIG PARAMETERS ###
-        map_os_release
-        detect_tempest_release
-        source $TOP_DIR/rc.${TEMPEST_RELEASE}
 
 
         if [ "$CREATE_ENTITIES" = "true" ]; then
