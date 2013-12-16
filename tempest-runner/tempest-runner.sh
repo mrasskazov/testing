@@ -161,6 +161,7 @@ get_id () {
 }
 
 tenant_create () {
+    echo "---------------------------------------------------------------------------------"
     # tenant_name
     if [ "$(get_id $1 keystone tenant-list)" == "" ]; then
         keystone --debug tenant-create --name $1 || exit 1
@@ -169,6 +170,7 @@ tenant_create () {
 }
 
 user_create () {
+    echo "---------------------------------------------------------------------------------"
     # user_name tenant_name password email enabled
     if [ "$(get_id $1 keystone user-list)" == "" ]; then
         keystone --debug user-create --name $1 --tenant-id $(get_id $2 keystone tenant-list) --pass $3 --email $4 --enabled $5 || exit 1
@@ -177,6 +179,7 @@ user_create () {
 }
 
 user_role_add () {
+    echo "---------------------------------------------------------------------------------"
     # user_name tenant_name role_name
     if [ "$(get_id $3 keystone role-list)" != "" ]; then
         if [ "$(keystone user-role-list --user-id $(get_id $1 keystone user-list) --tenant-id $(get_id $2 keystone tenant-list) | grep '^| [a-z0-9]' | grep -vi ' id ')" == "" ]; then
@@ -189,6 +192,7 @@ user_role_add () {
 }
 
 flavor_create () {
+    echo "---------------------------------------------------------------------------------"
     # is_public flavor_name id ram disk vcpus
     if [ "$(get_id $2 nova flavor-list)" == "" ]; then
         nova --debug flavor-create --is-public $1 $2 $3 $4 $5 $6
@@ -197,6 +201,7 @@ flavor_create () {
 }
 
 image_create_img () {
+    echo "---------------------------------------------------------------------------------"
     # is-public name IMANE_LINK disk-format container-format
     if [ "$(get_id $2 glance image-list)" == "" ]; then
         wget --progress=dot:mega -c $3
@@ -207,6 +212,7 @@ image_create_img () {
 }
 
 net_create () {
+    echo "---------------------------------------------------------------------------------"
     # tenant_name sip_lease gateway eg_id net_type ip_version router_name net_name subnet_name
     # if [ "$(get_id $2 glance image-list)" == "" ]; then
     if [ "$1" == "shared" ]; then
@@ -233,12 +239,12 @@ net_create () {
     fi
 
     if [ "$(get_id $NET_NAME neutron net-list)" == "" ]; then
-        neutron net-create --tenant_id $TENANT_ID $NET_NAME $SHARED $PHYS_NET --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
+        neutron --verbose net-create --tenant_id $TENANT_ID $NET_NAME $SHARED $PHYS_NET --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
     fi
     NET_ID=$(get_id $NET_NAME neutron net-list)
 
     if [ "$(get_id $SUBNET_NAME neutron subnet-list)" == "" ]; then
-        neutron subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
+        neutron --verbose subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
     fi
     SUBNET_ID=$(get_id $SUBNET_NAME neutron subnet-list)
 
@@ -247,13 +253,14 @@ net_create () {
     #fi
     ROUTER_ID=$(get_id $ROUTER_NAME neutron router-list)
 
-    neutron router-interface-add ${ROUTER_ID} ${SUBNET_ID}
+    neutron --verbose router-interface-add ${ROUTER_ID} ${SUBNET_ID}
 
     # for external network
     #neutron router-gateway-set --request-format json $ROUTER_ID $NET_ID
 }
 
 net_delete () {
+    echo "---------------------------------------------------------------------------------"
     # tenant_name router_name net_name subnet_name
     # if [ "$(get_id $2 glance image-list)" == "" ]; then
     TENANT_ID=$(get_id $1 keystone tenant-list)
@@ -267,13 +274,14 @@ net_delete () {
     # neutron net-list | awk '/_net/ {print $2}' | xargs -n1 -i% neutron net-delete %
     # neutron router-list | awk '/t[12]_router/ {print $2}' | xargs -n1 -i% neutron router-delete %
 
-    neutron router-interface-delete $(get_id $ROUTER_NAME neutron router-list) $(get_id $SUBNET_NAME neutron subnet-list)
-    neutron subnet-delete $(get_id $SUBNET_NAME neutron subnet-list)
-    neutron net-delete $(get_id $NET_NAME neutron net-list)
+    neutron --verbose router-interface-delete $(get_id $ROUTER_NAME neutron router-list) $(get_id $SUBNET_NAME neutron subnet-list)
+    neutron --verbose subnet-delete $(get_id $SUBNET_NAME neutron subnet-list)
+    neutron --verbose net-delete $(get_id $NET_NAME neutron net-list)
     #neutron router-delete $(get_id $ROUTER_NAME neutron router-list)
 }
 
 detect_tempest_release () {
+    echo "---------------------------------------------------------------------------------"
     if [ -z "$TEMPEST_RELEASE" ]; then
         DIR=${1:-TEMPEST_DIR}
         pushd ${DIR}
@@ -293,6 +301,7 @@ detect_tempest_release () {
 }
 
 fetch_tempest_repo () {
+    echo "---------------------------------------------------------------------------------"
     pushd $TOP_DIR/../..
         TEMPEST_REPO=${TEMPEST_REPO:-https://github.com/Mirantis/tempest.git}
         TEMPEST_REFSPEC=${TEMPEST_REFSPEC:-$TEMPEST_RELEASE}
@@ -306,6 +315,7 @@ fetch_tempest_repo () {
 }
 
 install_virtualenv () {
+    echo "---------------------------------------------------------------------------------"
     DIR=venv_tempest_${OS_RELEASE}
     pushd $HOME
         touch ${DIR}.reinstalling
@@ -332,6 +342,7 @@ install_virtualenv () {
 }
 
 use_virtualenv () {
+    echo "---------------------------------------------------------------------------------"
     # start | stop
     DIR=venv_tempest_${OS_RELEASE}
     ACTION=${1:-start}
