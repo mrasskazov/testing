@@ -24,9 +24,41 @@ map_os_release () {
     esac
 }
 
+revert_env () {
+    if [ -z "$SNAPSHOT" ]; then
+        echo "Using current state of environment"
+    else
+        virsh list --all | grep 'running$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
+        for D in $(virsh list --all |  awk '/'${ENV}'/ {print $2}'); do
+            echo $D
+            #S=$(virsh -q snapshot-list $D | grep -v 'shutoff$' | awk '/'$SNAPSHOT'/ {print $1}')
+            S=$(virsh -q snapshot-list $D | awk '/ '$SNAPSHOT' / {print $1}')
+            if [ -z "$S" ]; then
+                echo "Snapshot '$SNAPSHOT' is not found for domain '$D'"
+                virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
+                exit 2
+            fi
+            if [ -n "$S" ]; then
+                echo revert to $S
+                virsh snapshot-revert $D $S
+            fi
+        done
+    fi
+    virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
+    sleep 2
+}
+
 if [ "$OS_AUTH_URL" = "auto" ]; then
 
     unset OS_AUTH_URL
+    if [ -z "$(virsh list --all | grep ${ENV}_admin)" ]; then
+        echo "Environment '$ENV' is not found"
+        exit 1
+    fi
+
+    echo "================================================================================="
+    revert_env
+
 
     ADMIN_IP=$(virsh net-dumpxml ${ENV}_admin | grep -P "(\d+\.){3}"  -o | awk '{print $0"2"}')
     API_URL="http://$ADMIN_IP:8000"
