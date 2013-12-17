@@ -433,6 +433,23 @@ use_virtualenv () {
     fi
 }
 
+detect_excludes () {
+    NAME_VOLUME=$(keystone service-list | tail -n +4 | head -n -1 | awk '/volume/ {print $4}') # cinder
+    [ -z "$NAME_VOLUME" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*volume.*|.*cinder.*"
+    #NAME_IMAGE=$(keystone service-list | tail -n +4 | head -n -1 | awk '/image/ {print $4}') # glance
+    #NAME_IDENTITY=$(keystone service-list | tail -n +4 | head -n -1 | awk '/identity/ {print $4}') # keystone
+    #NAME_COMPUTE=$(keystone service-list | tail -n +4 | head -n -1 | awk '/compute/ {print $4}') # nova
+    #NAME_EC2=$(keystone service-list | tail -n +4 | head -n -1 | awk '/ec2/ {print $4}') # nova_ec2
+    NAME_NETWORK=$(keystone service-list | tail -n +4 | head -n -1 | awk '/network/ {print $4}') # quantum
+    [ -z "$NAME_NETWORK" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*quantum.*|.*neutron.*"
+    NAME_OBJECT_STORE=$(keystone service-list | tail -n +4 | head -n -1 | awk '/object-store/ {print $4}') # swift
+    [ -z "$NAME_OBJECT_STORE" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*object_storage.*"
+    #NAME_S3=$(keystone service-list | tail -n +4 | head -n -1 | awk '/s3/ {print $4}') # swift_s3
+
+    #######################################################################
+    # detect other services: murano/savanna/hit
+    #######################################################################
+}
 
 pushd $TOP_DIR/../..
     echo "================================================================================="
@@ -506,6 +523,8 @@ pushd $TOP_DIR/../..
 
         echo "================================================================================="
         echo "Running tempest..."
+
+        detect_excludes
 
         if [[ "$COMPONENT" != "all" ]] && [[ "$TYPE" != "all" ]]; then
             nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
