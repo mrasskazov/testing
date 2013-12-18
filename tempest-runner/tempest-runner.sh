@@ -455,21 +455,27 @@ use_virtualenv () {
 }
 
 detect_excludes () {
-    NAME_VOLUME=$(keystone service-list | tail -n +4 | head -n -1 | awk '/volume/ {print $4}') # cinder
-    [ -z "$NAME_VOLUME" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*volume.*|.*cinder.*"
-    #NAME_IMAGE=$(keystone service-list | tail -n +4 | head -n -1 | awk '/image/ {print $4}') # glance
-    #NAME_IDENTITY=$(keystone service-list | tail -n +4 | head -n -1 | awk '/identity/ {print $4}') # keystone
-    #NAME_COMPUTE=$(keystone service-list | tail -n +4 | head -n -1 | awk '/compute/ {print $4}') # nova
-    #NAME_EC2=$(keystone service-list | tail -n +4 | head -n -1 | awk '/ec2/ {print $4}') # nova_ec2
-    NAME_NETWORK=$(keystone service-list | tail -n +4 | head -n -1 | awk '/network/ {print $4}') # quantum
-    [ -z "$NAME_NETWORK" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*quantum.*|.*neutron.*"
-    NAME_OBJECT_STORE=$(keystone service-list | tail -n +4 | head -n -1 | awk '/object-store/ {print $4}') # swift
-    [ -z "$NAME_OBJECT_STORE" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*object_storage.*"
-    #NAME_S3=$(keystone service-list | tail -n +4 | head -n -1 | awk '/s3/ {print $4}') # swift_s3
+    VOLUME_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/volume/ {print $4}') # cinder
+    [ -z "$VOLUME_ENABLED" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*volume.*|.*cinder.*"
+    #IMAGE_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/image/ {print $4}') # glance
+    #IDENTITY_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/identity/ {print $4}') # keystone
+    #COMPUTE_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/compute/ {print $4}') # nova
+    #EC2_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/ec2/ {print $4}') # nova_ec2
+    NETWORK_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/network/ {print $4}') # quantum
+    [ -z "$NETWORK_ENABLED" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*quantum.*|.*neutron.*"
+    OBJECT_STORE_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/object-store/ {print $4}') # swift
+    [ -z "$OBJECT_STORE_ENABLED" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*object_storage.*"
+    #S3_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/s3/ {print $4}') # swift_s3
 
-    #######################################################################
-    # detect other services: murano/savanna/hit
-    #######################################################################
+    MURANO_ENABLED=$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["additional_components"]["murano"]["value"]')
+    [ "$MURANO_ENABLED" != "True" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*murano.*"
+    SAVANNA_ENABLED=$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["additional_components"]["savanna"]["value"]')
+    [ "$SAVANNA_ENABLED" != "True" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*savanna.*"
+    HEAT_ENABLED=$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["additional_components"]["heat"]["value"]')
+    [ "$HEAT_ENABLED" != "True" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*heat.*"
 }
 
 pushd $TOP_DIR/../..
@@ -490,6 +496,7 @@ pushd $TOP_DIR/../..
 
     fetch_tempest_repo
     use_virtualenv start
+    detect_excludes
 
 
     ### DEFAULT CONFIG PARAMETERS ###
@@ -553,7 +560,6 @@ pushd $TOP_DIR/../..
         echo "================================================================================="
         echo "Running tempest..."
 
-        detect_excludes
 
         if [[ "$COMPONENT" != "all" ]] && [[ "$TYPE" != "all" ]]; then
             nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
