@@ -356,7 +356,7 @@ fetch_tempest_repo () {
         TEMPEST_REPO=${TEMPEST_REPO:-https://github.com/Mirantis/tempest.git}
         TEMPEST_REFSPEC=${TEMPEST_REFSPEC:-$TEMPEST_RELEASE}
         if [[ ! -r $TEMPEST_DIR ]]; then
-            git clone TEMPEST_REPO
+            git clone $TEMPEST_REPO
         fi
         pushd $TEMPEST_DIR
             git fetch $TEMPEST_REPO $TEMPEST_REFSPEC && git checkout FETCH_HEAD
