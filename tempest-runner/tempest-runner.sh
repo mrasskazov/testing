@@ -178,6 +178,7 @@ export DB_HA_HOST=${DB_HA_HOST:-$AUTH_HOST}
 
 if [ "$CLUSTER_NET_PROVIDER" == "neutron" ]; then
     export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-net04_ext}
+    export INTERNAL_NETWORK_NAME=${INTERNAL_NETWORK_NAME:-net04}
     export PUBLIC_ROUTER_NAME=${PUBLIC_ROUTER_NAME:-router04}
 else
     export PUBLIC_NETWORK_NAME=${PUBLIC_NETWORK_NAME:-novanetwork}
@@ -276,16 +277,18 @@ net_create () {
     GATEWAY=${3:-$DEF_GATEWAY}
     MAX_SEG_ID=$(for n in $(neutron net-list | grep '^| [a-z0-9]' | grep -v ' id ' | awk '{print $2}'); do neutron net-show $n | awk '/segmentation_id/ {print $4}'; done | sort -g | tail -n1)
     SEG_ID=${4:-$(($MAX_SEG_ID + 1))}
-    CUR_NET_TYPE=$(neutron net-show $(neutron net-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/network_type/ {print $4}')
+    CUR_NET_TYPE=$(neutron net-show $INTERNAL_NETWORK_NAME | awk '/network_type/ {print $4}')
     NET_TYPE=${5:-$CUR_NET_TYPE}
-    CUR_IP_VERSION=$(neutron subnet-show $(neutron subnet-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/ip_version/ {print $4}')
+    CUR_IP_VERSION=$(neutron subnet-show ${INTERNAL_NETWORK_NAME}__subnet | awk '/ip_version/ {print $4}')
     IP_VERSION=${6:-$CUR_IP_VERSION}
     ROUTER_NAME=${7:-$PUBLIC_ROUTER_NAME}
     NET_NAME=${8:-${1}_net}
     SUBNET_NAME=${9:-${1}_subnet}
 
-    CUR_PHYS_NET=$(neutron net-show $(neutron net-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/physical_network/ {print $4}')
-    PHYS_NET_OPT="--provider:physical_network ${CUR_PHYS_NET}"
+    CUR_PHYS_NET=$(neutron net-show $INTERNAL_NETWORK_NAME | awk '/physical_network/ {print $4}')
+    if [ "$NET_TYPE" != "gre" ]; then
+        PHYS_NET_OPT="--provider:physical_network ${CUR_PHYS_NET}"
+    fi
 
     if [ "$NET_TYPE" != "flat" ]; then
         SEG_ID_OPT="--provider:segmentation_id $SEG_ID"
