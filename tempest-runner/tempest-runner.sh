@@ -49,11 +49,26 @@ revert_env () {
 }
 
 if [ "$OS_AUTH_URL" = "auto" ]; then
+    echo "================================================================================="
 
     unset OS_AUTH_URL
     if [ -z "$(virsh list --all | grep ${ENV}_admin)" ]; then
         echo "Environment '$ENV' is not found"
         exit 1
+    fi
+
+    mkdir -p /tmp/tempest_runner
+    LOCK_FILE=/tmp/tempest_runner/${ENV}.blocked
+    if [[ -f "$LOCK_FILE" ]]; then
+        echo "Environment '$ENV' already in use by:"
+        cat $LOCK_FILE
+        exit 2
+    else
+        echo "Jenkins: ${JENKINS_URL}" > $LOCK_FILE
+        echo "Job: ${JOB_NAME} (${JOB_URL})" >> $LOCK_FILE
+        echo "Build: ${BUILD_NUMBER} (${BUILD_URL})" >> $LOCK_FILE
+        echo "Started: ${BUILD_ID}" >> $LOCK_FILE
+        echo "Lock file: ${LOCK_FILE}" >> $LOCK_FILE
     fi
 
     echo "================================================================================="
@@ -574,5 +589,6 @@ pushd $TOP_DIR/../..
         use_virtualenv stop
     popd
 popd
+rm $LOCK_FILE
 exit $TEMPEST_RET
 
