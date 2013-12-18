@@ -9,6 +9,14 @@ export AUTH_API_VERSION=${AUTH_API_VERSION:-v2.0}
 
 export EXCLUDE_LIST=".*boto.*|.*nova_manage.*"
 
+quit () {
+    EXIT_CODE=${1:0}
+    shift
+    echo $@
+    rm $LOCK_FILE
+    exit $EXIT_CODE
+}
+
 map_os_release () {
     OS_VERSION=$(echo $CLUSTER_VERSION | grep -Eo '[0-9]+\.[0-9]+')
     case "$OS_VERSION" in
@@ -19,8 +27,7 @@ map_os_release () {
             OS_RELEASE=havana
             ;;
         *)
-            echo "ERROR: Can not map OpenStack release"
-            exit 1
+            quit 1 "ERROR: Can not map OpenStack release"
     esac
 }
 
@@ -34,9 +41,8 @@ revert_env () {
             #S=$(virsh -q snapshot-list $D | grep -v 'shutoff$' | awk '/'$SNAPSHOT'/ {print $1}')
             S=$(virsh -q snapshot-list $D | awk '/ '$SNAPSHOT' / {print $1}')
             if [ -z "$S" ]; then
-                echo "Snapshot '$SNAPSHOT' is not found for domain '$D'"
                 virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
-                exit 2
+                quit 2 "Snapshot '$SNAPSHOT' is not found for domain '$D'"
             fi
             if [ -n "$S" ]; then
                 echo revert to $S
@@ -53,8 +59,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     unset OS_AUTH_URL
     if [ -z "$(virsh list --all | grep ${ENV}_admin)" ]; then
-        echo "Environment '$ENV' is not found"
-        exit 1
+        quit 3 "Environment '$ENV' is not found"
     fi
 
     mkdir -p /tmp/tempest_runner
@@ -62,7 +67,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     if [[ -f "$LOCK_FILE" ]]; then
         echo "Environment '$ENV' already in use by:"
         cat $LOCK_FILE
-        exit 2
+        quit 4 "Environment '$ENV' already in use"
     else
         echo "Jenkins: ${JENKINS_URL}" > $LOCK_FILE
         echo "Job: ${JOB_NAME} (${JOB_URL})" >> $LOCK_FILE
@@ -81,34 +86,34 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     # get cluster config via Nailgun API
     CLUSTER_ID=$(${NAILGUN}/api/clusters/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj[0]["id"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_MODE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["mode"]') || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["mode"]') || quit 224 "Can not detect cluster paramaters"
     export CLUSTER_NET_PROVIDER=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_provider"]') || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_provider"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_RELEASE_ID=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release"]["id"]') || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release"]["id"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_OPERATING_SYSTEM=$(${NAILGUN}/api/releases/ | \
-        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['operating_system']") || exit 224
+        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['operating_system']") || quit 224 "Can not detect cluster paramaters"
     CLUSTER_VERSION=$(${NAILGUN}/api/releases/ | \
-        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['version']") || exit 224
+        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['version']") || quit 224 "Can not detect cluster paramaters"
     map_os_release
     CLUSTER_VERSION_NAME=$(${NAILGUN}/api/releases/ | \
-        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['name']") || exit 224
+        python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['name']") || quit 224 "Can not detect cluster paramaters"
 
     # detect OS_AUTH_URL
     if [ "$CLUSTER_MODE" = "multinode" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}/api/nodes | \
-            python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || exit 224
+            python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || quit 224 "Can not detect cluster paramaters"
         export DB_HOST=${DB_HOST:-$(${NAILGUN}/api/nodes | \
-            python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="management"][0]["ip"].split("/")[0]')} || exit 224
+            python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="management"][0]["ip"].split("/")[0]')} || quit 224 "Can not detect cluster paramaters"
     elif [ "$CLUSTER_MODE" = "ha_compact" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
-            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || exit 224
+            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["public_vip"]')} || quit 224 "Can not detect cluster paramaters"
         export DB_HOST=${DB_HOST:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
-            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["management_vip"]')} || exit 224
+            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["management_vip"]')} || quit 224 "Can not detect cluster paramaters"
     fi
 
     #detect DB_URI
@@ -120,11 +125,11 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     # detect credentials
     export OS_USERNAME=${OS_USERNAME:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["user"]["value"]')} || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["user"]["value"]')} || quit 224 "Can not detect cluster paramaters"
     export OS_PASSWORD=${OS_PASSWORD:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["password"]["value"]')} || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["password"]["value"]')} || quit 224 "Can not detect cluster paramaters"
     export OS_TENANT_NAME=${OS_TENANT_NAME:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/attributes | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["tenant"]["value"]')} || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["editable"]["access"]["tenant"]["value"]')} || quit 224 "Can not detect cluster paramaters"
 
     echo ""
     ${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/$CLUSTER_NET_PROVIDER
@@ -136,8 +141,7 @@ fi
 # check OS_AUTH_URL
 export TEST_AUTH_URL=$(wget -qO- $OS_AUTH_URL | grep $AUTH_API_VERSION)
 if [ -z "$TEST_AUTH_URL" ]; then
-    echo "Could not connect to OS_AUTH_URL=$OS_AUTH_URL"
-    exit 1
+    quit 5 "Could not connect to OS_AUTH_URL=$OS_AUTH_URL"
 fi
 
 
@@ -211,7 +215,7 @@ tenant_create () {
     echo "---------------------------------------------------------------------------------"
     # tenant_name
     if [ "$(get_id $1 keystone tenant-list)" == "" ]; then
-        keystone --debug tenant-create --name $1 || exit 1
+        keystone --debug tenant-create --name $1 || quit 6 "Can not create tenant"
         echo $?
     fi
 }
@@ -220,7 +224,7 @@ user_create () {
     echo "---------------------------------------------------------------------------------"
     # user_name tenant_name password email enabled
     if [ "$(get_id $1 keystone user-list)" == "" ]; then
-        keystone --debug user-create --name $1 --tenant-id $(get_id $2 keystone tenant-list) --pass $3 --email $4 --enabled $5 || exit 1
+        keystone --debug user-create --name $1 --tenant-id $(get_id $2 keystone tenant-list) --pass $3 --email $4 --enabled $5 || quit 7 "Can not create user"
         echo $?
     fi
 }
@@ -230,7 +234,7 @@ user_role_add () {
     # user_name tenant_name role_name
     if [ "$(get_id $3 keystone role-list)" != "" ]; then
         if [ "$(keystone user-role-list --user-id $(get_id $1 keystone user-list) --tenant-id $(get_id $2 keystone tenant-list) | grep '^| [a-z0-9]' | grep -vi ' id ')" == "" ]; then
-            keystone --debug user-role-add --user-id $(get_id $1 keystone user-list) --tenant-id $(get_id $2 keystone tenant-list) --role-id $(get_id $3 keystone role-list) || exit 1
+            keystone --debug user-role-add --user-id $(get_id $1 keystone user-list) --tenant-id $(get_id $2 keystone tenant-list) --role-id $(get_id $3 keystone role-list) || quit 8 "Can not create role"
             echo $?
         fi
     else
@@ -253,7 +257,7 @@ image_create_img () {
     if [ "$(get_id $2 glance image-list)" == "" ]; then
         wget --progress=dot:mega -c $3
         IMAGE_FILE_NAME=.$(echo $3 | grep -Eo '/[^/]*?$')
-        glance --debug image-create --is-public $1 --name $2 --file $IMAGE_FILE_NAME --disk-format $4 --container-format $5 || exit 1
+        glance --debug image-create --is-public $1 --name $2 --file $IMAGE_FILE_NAME --disk-format $4 --container-format $5 || quit 9 "Can not upload image"
         echo $?
     fi
 }
@@ -286,17 +290,17 @@ net_create () {
     fi
 
     if [ "$(get_id $NET_NAME neutron net-list)" == "" ]; then
-        neutron --verbose net-create --tenant_id $TENANT_ID $NET_NAME $SHARED $PHYS_NET --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || exit 1
+        neutron --verbose net-create --tenant_id $TENANT_ID $NET_NAME $SHARED $PHYS_NET --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || quit 10 "Can not create network"
     fi
     NET_ID=$(get_id $NET_NAME neutron net-list)
 
     if [ "$(get_id $SUBNET_NAME neutron subnet-list)" == "" ]; then
-        neutron --verbose subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || exit 1
+        neutron --verbose subnet-create --name $SUBNET_NAME --tenant_id $TENANT_ID --ip_version $IP_VERSION $NET_ID --gateway $GATEWAY $IP_LEASE || quit 11 "Can not create subnet"
     fi
     SUBNET_ID=$(get_id $SUBNET_NAME neutron subnet-list)
 
     #if [ "$(get_id $ROUTER_NAME neutron router-list)" == "" ]; then
-        #neutron router-create --tenant_id $TENANT_ID $ROUTER_NAME || exit 1
+        #neutron router-create --tenant_id $TENANT_ID $ROUTER_NAME || quit 12 "can not create router"
     #fi
     ROUTER_ID=$(get_id $ROUTER_NAME neutron router-list)
 
@@ -340,8 +344,7 @@ detect_tempest_release () {
             elif [ -n "$(echo $LAST_COMMITS | grep folsom)" ]; then
                 TEMPEST_RELEASE=folsom
             else
-                echo "ERROR: Can not detect Tempest release"
-                exit 1
+                quit 14 "ERROR: Can not detect Tempest release"
             fi
         popd
     fi
@@ -361,28 +364,33 @@ fetch_tempest_repo () {
     popd
 }
 
+pip_fail () {
+    rm ${DIR}.reinstalling
+    quit $@
+}
+
 install_virtualenv () {
     echo "---------------------------------------------------------------------------------"
     DIR=venv_tempest_${OS_RELEASE}
     pushd $HOME
         touch ${DIR}.reinstalling
         source $DIR/bin/activate
-        pip install -r $TOP_DIR/tempest-runner-pre-requires || (rm ${DIR}.reinstalling ; exit 1)
+        pip install -r $TOP_DIR/tempest-runner-pre-requires || pip_fail 212 "Can not install virtual environment"
         case "$OS_RELEASE" in
             "grizzly")
-                pip install -r $TEMPEST_DIR/tools/pip-requires || (rm ${DIR}.reinstalling ; exit 1)
-                pip install -r $TEMPEST_DIR/tools/test-requires || (rm ${DIR}.reinstalling ; exit 1)
+                pip install -r $TEMPEST_DIR/tools/pip-requires || pip_fail 212 "Can not install virtual environment"
+                pip install -r $TEMPEST_DIR/tools/test-requires || pip_fail 212 "Can not install virtual environment"
                 ;;
             "havana")
-                pip install -r $TEMPEST_DIR/requirements.txt || (rm ${DIR}.reinstalling ; exit 1)
-                pip install -r $TEMPEST_DIR/test-requirements.txt || (rm ${DIR}.reinstalling ; exit 1)
+                pip install -r $TEMPEST_DIR/requirements.txt || pip_fail 212 "Can not install virtual environment"
+                pip install -r $TEMPEST_DIR/test-requirements.txt || pip_fail 212 "Can not install virtual environment"
                 ;;
             *)
                 echo "ERROR: Can not install virtual environment for '$OS_RELEASE' OpenStack release"
                 rm ${DIR}.reinstalling
                 exit 1
         esac
-        pip install -r $TOP_DIR/tempest-runner-requires || (rm ${DIR}.reinstalling ; exit 1)
+        pip install -r $TOP_DIR/tempest-runner-requires || pip_fail 212 "Can not install virtual environment"
         deactivate
         mv ${DIR}.reinstalling ${DIR}.done
     popd
@@ -405,9 +413,8 @@ use_virtualenv () {
                 fi
                 WAIT_VENV=$(( $WAIT_VENV - 10 ))
                 if [ "$WAIT_VENV" -lt 0 ]; then
-                    echo "Timeout waiting for virtual environment reinstalled. Can not use"
                     rm /tmp/${DIR}/$(ls /tmp/${DIR}/ | tail -n 1)
-                    exit 2
+                    quit 20 "Timeout waiting for virtual environment reinstalled. Can not use"
                 fi
                 sleep 10
             done
@@ -417,9 +424,8 @@ use_virtualenv () {
                 while [ "$(ls /tmp/${DIR}/ | wc -l)" -gt 1 ]; do
                     WAIT_VENV=$(( $WAIT_VENV - 10 ))
                     if [ "$WAIT_VENV" -lt 0 ]; then
-                        echo "Timeout waiting for virtual environment freed. Can not reinstall"
                         rm /tmp/${DIR}/$(ls /tmp/${DIR}/ | tail -n 1)
-                        exit 2
+                        quit 21 "Timeout waiting for virtual environment freed. Can not reinstall"
                     fi
                     sleep 10
                 done
@@ -470,9 +476,8 @@ pushd $TOP_DIR/../..
     echo "================================================================================="
     find . -name *.pyc -delete
 
-    #[ -n "$OS_RELEASE" ] && TEMPEST_RELEASE=fuel/stable/$OS_RELEASE || exit 1
     TEMPEST_RELEASE=${TEMPEST_REFSPEC:-fuel/stable/$OS_RELEASE}
-    [ -z "$OS_RELEASE" ] && exit 1
+    [ -z "$OS_RELEASE" ] && quit 30 "OS_RELEASE not specified"
 
     if [ -z "$TESTCASE" ]; then
         if [ "$OS_RELEASE" = "grizzly" ]; then
@@ -598,6 +603,5 @@ pushd $TOP_DIR/../..
         use_virtualenv stop
     popd
 popd
-rm $LOCK_FILE
-exit $TEMPEST_RET
+quit $TEMPEST_RET
 
