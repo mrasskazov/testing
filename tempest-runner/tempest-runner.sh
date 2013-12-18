@@ -145,7 +145,7 @@ export AUTH_HOST=${AUTH_HOST:-$(echo $OS_AUTH_URL | grep -Eo '([0-9]{1,3}\.){3}[
 export AUTH_PORT=${AUTH_PORT:-$(echo $OS_AUTH_URL | grep -Eo ':([0-9]{1,5})' | cut -d ":" -f2)}
 export AUTH_API_VERSION=${AUTH_API_VERSION:-$(echo $OS_AUTH_URL | grep -Eo 'v([0-9\.])+')}
 
-export TESTCASE=${TESTCASE:-tempest/tests}
+#export TESTCASE=${TESTCASE:-tempest/tests}
 export COMPONENT=${COMPONENT:-all}
 export COMPONENT=$(echo ${COMPONENT})
 export TYPE=${TYPE:-smoke}
@@ -473,6 +473,15 @@ pushd $TOP_DIR/../..
     #[ -n "$OS_RELEASE" ] && TEMPEST_RELEASE=fuel/stable/$OS_RELEASE || exit 1
     TEMPEST_RELEASE=${TEMPEST_REFSPEC:-fuel/stable/$OS_RELEASE}
     [ -z "$OS_RELEASE" ] && exit 1
+
+    if [ -z "$TESTCASE" ]; then
+        if [ "$OS_RELEASE" = "grizzly" ]; then
+            TESTCASE="tempest/tests"
+        else
+            TESTCASE="."
+        fi
+    fi
+
 
     fetch_tempest_repo
     use_virtualenv start
