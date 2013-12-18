@@ -285,12 +285,14 @@ net_create () {
     SUBNET_NAME=${9:-${1}_subnet}
 
     CUR_PHYS_NET=$(neutron net-show $(neutron net-list | grep '^| [a-z0-9]' | grep -vi ' id ' | tail -n1 | awk '{print $2}') | awk '/physical_network/ {print $4}')
-    if [ "$CLUSTER_NET_SEGMENT_TYPE" = "vlan" ]; then
-        PHYS_NET="--provider:physical_network ${CUR_PHYS_NET}"
+    PHYS_NET_OPT="--provider:physical_network ${CUR_PHYS_NET}"
+
+    if [ "$NET_TYPE" != "flat" ]; then
+        SEG_ID_OPT="--provider:segmentation_id $SEG_ID"
     fi
 
     if [ "$(get_id $NET_NAME neutron net-list)" == "" ]; then
-        neutron --verbose net-create --tenant_id $TENANT_ID $NET_NAME $SHARED $PHYS_NET --provider:network_type $NET_TYPE --provider:segmentation_id $SEG_ID || quit 10 "Can not create network"
+        neutron --verbose net-create --tenant_id $TENANT_ID $NET_NAME $SHARED $PHYS_NET_OPT --provider:network_type $NET_TYPE $SEG_ID_OPT || quit 10 "Can not create network"
     fi
     NET_ID=$(get_id $NET_NAME neutron net-list)
 
