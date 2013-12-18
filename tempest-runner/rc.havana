@@ -34,6 +34,8 @@ export TOS__COMPUTE__NETWORK_FOR_SSH=${TOS__COMPUTE__NETWORK_FOR_SSH:-${PUBLIC_N
 export TOS__COMPUTE__IP_VERSION_FOR_SSH=${TOS__COMPUTE__IP_VERSION_FOR_SSH:-4}
 export TOS__COMPUTE__USE_FLOATINGIP_FOR_SSH=${TOS__COMPUTE__USE_FLOATINGIP_FOR_SSH:-True}
 export TOS__COMPUTE__CHANGE_PASSWORD_AVAILABLE=${TOS__COMPUTE__CHANGE_PASSWORD_AVAILABLE:-false}
+# Run live migration tests (requires 2 hosts)
+#live_migration_available = false
 
 #export TOS__WHITEBOX__PATH_TO_PRIVATE_KEY=${TOS__WHITEBOX__PATH_TO_PRIVATE_KEY:-/var/lib/puppet/ssh_keys/openstack}
 #export TOS__WHITEBOX__DB_URI=${TOS__WHITEBOX__DB_URI:-$DB_URI}
@@ -65,6 +67,46 @@ else
 fi
 
 #TODO: prepare options in [boto] section
+
+
+export TOS__ORCHESTRATION__INSTANCE_TYPE=f64_1
+export TOS__DASHBOARD__DASHBOARD_URL="http://${AUTH_HOST}/"
+export TOS__DASHBOARD__LOGIN_URL="http://${AUTH_HOST}/auth/login/"
+
+#[murano]
+## Murano endpoint
+#murano_url = http://${AUTH_HOST}:8082
+##Murano metadata repository
+#murano_metadata = http://${AUTH_HOST}:8084
+## AglistnerIP for creating SQL cluster
+#agListnerIP = 10.0.0.155
+## ClusterIP for creating SQL cluster
+#clusterIP = 10.0.0.150
+#
+#[savanna_common]
+## Host for Savanna
+#savanna_host = "${AUTH_HOST}"
+## Port for Savanna
+#savanna_port = "8386"
+## Api version for Savanna
+#savanna_api_version = "v1.1"
+#
+#[savanna_vanilla]
+#skip_all_tests_for_plugin = False
+#
+#skip_cluster_config_test = False
+#skip_map_reduce_test = False
+#skip_swift_test = False
+#skip_scaling_test = False
+#skip_edp_test = False
+#
+#[savanna_hdp]
+#skip_all_tests_for_plugin = False
+#
+#skip_map_reduce_test = False
+#skip_swift_test = False
+#skip_scaling_test = False
+
 
 #export TOS__SERVICE_AVAILABLE__GLANCE = True
 #export TOS__SERVICE_AVAILABLE__NOVA = True
