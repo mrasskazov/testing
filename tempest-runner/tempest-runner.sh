@@ -51,7 +51,7 @@ revert_env () {
         done
     fi
     virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
-    sleep 2
+    sleep 10
 }
 
 if [ "$OS_AUTH_URL" = "auto" ]; then
