@@ -463,6 +463,7 @@ detect_excludes () {
     VOLUME_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/volume/ {print $4}') # cinder
     [ -z "$VOLUME_ENABLED" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*volume.*|.*cinder.*"
     #IMAGE_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/image/ {print $4}') # glance
+    #ORCHESTRATION_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/orchestration/ {print $4}') # heat
     #IDENTITY_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/identity/ {print $4}') # keystone
     #COMPUTE_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/compute/ {print $4}') # nova
     #EC2_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/ec2/ {print $4}') # nova_ec2
