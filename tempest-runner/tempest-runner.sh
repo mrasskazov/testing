@@ -139,7 +139,7 @@ fi
 
 
 # check OS_AUTH_URL
-export TEST_AUTH_URL=$(wget -qO- $OS_AUTH_URL | grep $AUTH_API_VERSION)
+export TEST_AUTH_URL="$(wget -qO- $OS_AUTH_URL | grep $AUTH_API_VERSION)"
 if [ -z "$TEST_AUTH_URL" ]; then
     quit 5 "Could not connect to OS_AUTH_URL=$OS_AUTH_URL"
 fi
