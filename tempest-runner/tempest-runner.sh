@@ -12,6 +12,7 @@ export EXCLUDE_LIST=".*boto.*|.*nova_manage.*"
 quit () {
     EXIT_CODE=${1:0}
     shift
+    echo "Lab: $NODE_NAME<br>Env: $ENV<br>$CLUSTER_VERSION_NAME, $CLUSTER_MODE, $CLUSTER_NET_PROVIDER, $CLUSTER_NET_SEGMENT_TYPE, $OS_AUTH_URL"
     echo $@
     rm $LOCK_FILE
     exit $EXIT_CODE
