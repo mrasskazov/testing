@@ -55,6 +55,13 @@ revert_env () {
     sleep 10
 }
 
+create_snapshot() {
+    virsh list --all | grep 'running$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
+    for D in $(virsh list --all |  awk '/ '${ENV}'/ {print $2}'); do
+        virsh snapshot-create-as $D ${BUILD_TAG}_$SNAPSHOT --halt
+    done
+}
+
 if [ "$OS_AUTH_URL" = "auto" ]; then
     echo "================================================================================="
 
@@ -580,6 +587,8 @@ pushd $TOP_DIR/../..
 
         #nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml $TESTCASE
         TEMPEST_RET=$?
+
+        create_snapshot
 
         echo "================================================================================="
         if [ "$DELETE_ENTITIES" = "true" ]; then
