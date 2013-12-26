@@ -113,9 +113,9 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     # detect OS_AUTH_URL
     if [ "$CLUSTER_MODE" = "multinode" ]; then
-        export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}/api/nodes | \
+        export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}"/api/nodes/?cluster_id=$CLUSTER_ID" | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="public"][0]["ip"].split("/")[0]')} || quit 224 "Can not detect cluster paramaters"
-        export DB_HOST=${DB_HOST:-$(${NAILGUN}/api/nodes | \
+        export DB_HOST=${DB_HOST:-$(${NAILGUN}"/api/nodes/?cluster_id=$CLUSTER_ID" | \
             python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if "controller" in o["roles"]][0]["network_data"];print [n for n in nd if n["name"]=="management"][0]["ip"].split("/")[0]')} || quit 224 "Can not detect cluster paramaters"
     elif [ "$CLUSTER_MODE" = "ha_compact" ]; then
         export AUTH_HOST=${AUTH_HOST:-$(${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/${CLUSTER_NET_PROVIDER} | \
