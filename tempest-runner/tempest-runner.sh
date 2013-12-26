@@ -562,7 +562,7 @@ pushd $TOP_DIR/../..
 
             env | grep ^TOS_
             #env | awk -F '__' '/^TOS__/ {s=$2; gsub("_","-",s); v=split($3,kv,"="); end; print tolower(s" "kv[1])" "kv[2]}' | xargs --verbose -n3 -i% ini_param $CONF %
-            for p in $(env | awk -F '__' '/^TOS__/ {s=$2; gsub("_","-",s); v=split($3,kv,"="); end; print tolower(s"="kv[1])"="kv[2]}')
+            for p in $(env | awk -F '__' '/^TOS__/ {s=$2; gsub("[_-]","[_-]",s); v=split($3,kv,"="); end; print tolower(s"="kv[1])"="kv[2]}')
             do
                 sec=$(echo $p | cut -d "=" -f1)
                 par=$(echo $p | cut -d "=" -f2)
