@@ -47,7 +47,7 @@ revert_env () {
             fi
             if [ -n "$S" ]; then
                 echo revert to $S
-                virsh snapshot-revert $D $S
+                virsh snapshot-revert $D $S || quit 223 "Can not revert snapshot."
             fi
         done
     fi
