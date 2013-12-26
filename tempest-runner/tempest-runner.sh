@@ -468,7 +468,9 @@ use_virtualenv () {
 }
 
 detect_excludes () {
-    VOLUME_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/volume/ {print $4}') # cinder
+    #VOLUME_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/volume/ {print $4}') # cinder
+    VOLUME_ENABLED=${VOLUME_ENABLED:-$(${NAILGUN}"/api/nodes/?cluster_id=$CLUSTER_ID" | \
+        python -c 'import json,sys;obj=json.load(sys.stdin);nd=[o for o in obj if ("cinder" in o["roles"] or "ceph-osd" in o["roles"])];print "cinder" if len(nd) > 0 else ""')}
     [ -z "$VOLUME_ENABLED" ] && export EXCLUDE_LIST="$EXCLUDE_LIST|.*volume.*|.*cinder.*"
     #IMAGE_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/image/ {print $4}') # glance
     #ORCHESTRATION_ENABLED=$(keystone service-list | tail -n +4 | head -n -1 | awk '/orchestration/ {print $4}') # heat
