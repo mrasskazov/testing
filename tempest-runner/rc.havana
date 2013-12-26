@@ -66,6 +66,8 @@ else
     export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(nova network-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
 fi
 
+export TOS__OBJECT_STORAGE__OPERATOR_ROLE=admin
+
 #TODO: prepare options in [boto] section
 
 
