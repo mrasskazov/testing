@@ -170,7 +170,7 @@ export OS_AUTH_STRATEGY=${OS_AUTH_STRATEGY:-keystone}
 
 export REINSTALL_VIRTUALENV=${REINSTALL_VIRTUALENV:-false}
 export CREATE_ENTITIES=${CREATE_ENTITIES:-true}
-export DELETE_ENTITIES=${DELETE_ENTITIES:-true}
+export DELETE_ENTITIES=${DELETE_ENTITIES:-false}
 
 # detect/define some parameters
 export CIRROS_HOST=http://download.cirros-cloud.net/
