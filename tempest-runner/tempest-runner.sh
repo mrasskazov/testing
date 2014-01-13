@@ -271,6 +271,22 @@ image_create_img () {
     fi
 }
 
+download_uec() {
+    export IMG_DIR=$(readlink -f $TOP_DIR/../../images)
+    mkdir -p $IMG_DIR
+    pushd $IMG_DIR
+        local BASE_IMAGE_NAME=cirros-$CIRROS_RELEASE-x86_64
+        local UEC_LINK=${UEC_LINK:-"$CIRROS_HOST/$CIRROS_RELEASE/${BASE_IMAGE_NAME}-uec.tar.gz"}
+        wget --progress=dot:mega -c $UEC_LINK
+        local UEC_ARCHIVE=.$(echo $UEC_LINK | grep -Eo '/[^/]*?$')
+        tar xvfz $UEC_ARCHIVE
+
+        export AMI_IMG_FILE=${AMI_IMG_FILE:-${BASE_IMAGE_NAME}-blank.img}
+        export ARI_IMG_FILE=${ARI_IMG_FILE:-${BASE_IMAGE_NAME}-initrd}
+        export AKI_IMG_FILE=${AKI_IMG_FILE:-${BASE_IMAGE_NAME}-vmlinuz}
+    popd
+}
+
 net_create () {
     echo "---------------------------------------------------------------------------------"
     # tenant_name sip_lease gateway eg_id net_type ip_version router_name net_name subnet_name
@@ -513,6 +529,7 @@ pushd $TOP_DIR/../..
     fetch_tempest_repo
     use_virtualenv start
     detect_excludes
+    download_uec
 
 
     ### DEFAULT CONFIG PARAMETERS ###
