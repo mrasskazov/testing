@@ -71,8 +71,9 @@ export TOS__OBJECT_STORAGE__OPERATOR_ROLE=admin
 #TODO: prepare options in [boto] section
 
 export TOS__ORCHESTRATION__INSTANCE_TYPE=f64_1
-export TOS__DASHBOARD__DASHBOARD_URL="http://${AUTH_HOST}/"
-export TOS__DASHBOARD__LOGIN_URL="http://${AUTH_HOST}/auth/login/"
+
+export TOS__DASHBOARD__DASHBOARD_URL="http://${AUTH_HOST}/dashboard/"
+export TOS__DASHBOARD__LOGIN_URL="http://${AUTH_HOST}/dashboard/auth/login/"
 
 export TOS__SCENARIO__IMG_DIR=${TOS__SCENARIO__IMG_DIR:-${IMG_DIR}}
 export TOS__SCENARIO__AMI_IMG_FILE=${TOS__SCENARIO__AMI_IMG_FILE:-${AMI_IMG_FILE}}
