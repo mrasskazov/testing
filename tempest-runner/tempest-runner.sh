@@ -32,6 +32,24 @@ map_os_release () {
     esac
 }
 
+update_time() {
+[ "$CLUSTER_OPERATING_SYSTEM" = "Ubuntu" ] && NTPD_SERVICE=ntp || NTPD_SERVICE=ntpd
+expect << ENDOFEXPECT
+spawn ssh root@$ADMIN_IP
+expect "password: "
+send "r00tme\r"
+expect "# "
+send "service ntpd stop; ntpdate pool.ntp.org; service ntpd start\r"
+expect "# "
+# work on admin node
+#for N in $(ls /var/log/remote/ | grep node-); do echo 'ssh root@'$N' \"service ntpd stop; ntpdate pool.ntp.org; service ntpd start\"'; done | xargs --verbose -P0 -n1 -i% bash -c %
+send "for N in \$\(ls /var/log/remote/ | grep node-\); do ssh root@\$\N \"service $NTPD_SERVICE stop; ntpdate pool.ntp.org; service $NTPD_SERVICE start\"; done\r"
+expect "# "
+send "exit\r"
+expect eof
+ENDOFEXPECT
+}
+
 revert_env () {
     if [ -z "$SNAPSHOT" ]; then
         echo "Using current state of environment"
@@ -137,6 +155,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
 fi
 
+update_time
 
 # check OS_AUTH_URL
 export TEST_AUTH_URL="$(wget -qO- $OS_AUTH_URL | grep $AUTH_API_VERSION)"
