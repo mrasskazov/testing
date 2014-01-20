@@ -54,22 +54,22 @@ revert_env () {
     if [ -z "$SNAPSHOT" ]; then
         echo "Using current state of environment"
     else
-        virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -P0 -n1 -i% virsh suspend %
+        virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
         for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
             S=$(virsh -q snapshot-list $VM | awk '/ '$SNAPSHOT' / {print $1}')
             [ -z "$S" ] && quit 2 "Snapshot '$SNAPSHOT' is not found for domain '$VM'"
             [ -n "$S" ] && echo "virsh snapshot-revert $VM $S"
-        done | xargs --verbose -P0 -n1 -i% bash -c % || quit 223 "Can not revert snapshot."
-        virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -P0 -n1 -i% virsh resume %
+        done | xargs --verbose -n1 -i% bash -c % || quit 223 "Can not revert snapshot."
+        virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
         sleep 10
     fi
 }
 
 create_snapshot() {
-    virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -P0 -n1 -i% virsh suspend %
+    virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
     for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
         echo "virsh snapshot-create-as $VM ${BUILD_TAG}_$SNAPSHOT --halt"
-    done | xargs --verbose -P0 -n1 -i% bash -c %
+    done | xargs --verbose -n1 -i% bash -c %
 }
 
 if [ "$OS_AUTH_URL" = "auto" ]; then
