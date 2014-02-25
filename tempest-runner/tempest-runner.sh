@@ -112,7 +112,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_RELEASE_ID=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release"]["id"]') || quit 224 "Can not detect cluster paramaters"
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release_id"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_OPERATING_SYSTEM=$(${NAILGUN}/api/releases/ | \
         python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['operating_system']") || quit 224 "Can not detect cluster paramaters"
     CLUSTER_VERSION=$(${NAILGUN}/api/releases/ | \
