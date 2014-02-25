@@ -34,6 +34,7 @@ map_os_release () {
 
 update_time() {
 [ "$CLUSTER_OPERATING_SYSTEM" = "Ubuntu" ] && NTPD_SERVICE=ntp || NTPD_SERVICE=ntpd
+[ -z "$(which expect)" ] && exit 123
 expect << ENDOFEXPECT
 spawn ssh root@$ADMIN_IP
 expect "password: "

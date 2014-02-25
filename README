@@ -4,9 +4,18 @@ Run the Tempest at environment with creating all the needed entities (users, ten
 
 1.1. Ubuntu 12.04
 
-python-dev python-virtualenv libxml2-dev libxslt1-dev libmysqlclient-dev libpq-dev git-core
+python-dev python-virtualenv libxml2-dev libxslt1-dev libmysqlclient-dev libpq-dev git-core expect
+
+1.1.1 Ubuntu 13.04
+
+bffi-dev
 
 1.2. CentOS 6.4
 
-python-devel python-virtualenv libxml2-devel libxslt-devel mysql-devel mysql-client mysql-shared gcc openssl-devel postgresql-devel git-core 
+python-devel python-virtualenv libxml2-devel libxslt-devel mysql-devel mysql-client mysql-shared gcc openssl-devel postgresql-devel git-core expect
 
+
+~/.ssh/config
+Host *
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
