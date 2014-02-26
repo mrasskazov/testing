@@ -1,4 +1,5 @@
 #!/bin/bash -x
+export LANG=C
 TOP_DIR=$(cd $(dirname "$0") && pwd)
 
 TEMPEST_DIR=$(readlink -f $TOP_DIR/../../tempest)
