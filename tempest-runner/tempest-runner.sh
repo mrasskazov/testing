@@ -61,7 +61,7 @@ revert_env () {
             [ -z "$S" ] && quit 2 "Snapshot '$SNAPSHOT' is not found for domain '$VM'"
             [ -n "$S" ] && echo "virsh snapshot-revert $VM $S"
         done | xargs --verbose -n1 -i% bash -c % || quit 223 "Can not revert snapshot."
-        virsh list --all | grep 'paused$' | awk '/'${ENV}'/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
+        virsh list --all | grep 'paused$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
         sleep 10
     fi
 }
