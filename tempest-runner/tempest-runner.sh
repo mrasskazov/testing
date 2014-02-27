@@ -68,9 +68,10 @@ revert_env () {
 }
 
 create_snapshot() {
+    TIMESTAMP=$(date +%Y%m%d%H%M%S)
     virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
     for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
-        echo "virsh snapshot-create-as $VM ${BUILD_TAG}_$SNAPSHOT --halt"
+        echo "virsh snapshot-create-as $VM ${BUILD_TAG}_${SNAPSHOT}_${TIMESTAMP} --halt"
     done | xargs --verbose -n1 -i% bash -c %
 }
 
