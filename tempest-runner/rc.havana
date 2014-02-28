@@ -117,6 +117,7 @@ export TOS__SCENARIO__AKI_IMG_FILE=${TOS__SCENARIO__AKI_IMG_FILE:-${AKI_IMG_FILE
 #skip_swift_test = False
 #skip_scaling_test = False
 
+export TOS__CLI__CLI_DIR=$(dirname $(which keystone))
 
 #export TOS__SERVICE_AVAILABLE__GLANCE = True
 #export TOS__SERVICE_AVAILABLE__NOVA = True
