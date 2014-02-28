@@ -56,7 +56,7 @@ revert_env () {
     if [ -z "$SNAPSHOT" ]; then
         echo "Using current state of environment"
     else
-        virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
+        virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh destroy %
         for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
             S=$(virsh -q snapshot-list $VM | awk '/ '$SNAPSHOT' / {print $1}')
             [ -z "$S" ] && quit 2 "Snapshot '$SNAPSHOT' is not found for domain '$VM'"
