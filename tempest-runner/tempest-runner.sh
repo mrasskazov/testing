@@ -53,25 +53,30 @@ ENDOFEXPECT
 }
 
 revert_env () {
-    if [ -z "$SNAPSHOT" ]; then
-        echo "Using current state of environment"
-    else
-        virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh destroy %
-        for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
-            S=$(virsh -q snapshot-list $VM | awk '/ '$SNAPSHOT' / {print $1}')
-            [ -z "$S" ] && quit 2 "Snapshot '$SNAPSHOT' is not found for domain '$VM'"
-            [ -n "$S" ] && echo "virsh snapshot-revert $VM $S"
-        done | xargs --verbose -n1 -i% bash -c % || quit 223 "Can not revert snapshot."
-        virsh list --all | grep 'paused$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
-        sleep 10
-    fi
+    local NAME=$1
+    virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
+    for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
+        S=$(virsh -q snapshot-list $VM | awk '/ '$NAME' / {print $1}')
+        [ -z "$S" ] && quit 2 "Snapshot '$NAME' is not found for domain '$VM'"
+        [ -n "$S" ] && echo "virsh snapshot-revert $VM $S"
+    done | xargs --verbose -n1 -i% bash -c % || quit 223 "Can not revert snapshot."
+    virsh list --all | grep 'paused$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
+    sleep 10
+}
+
+resume_env() {
+    local NAME=$1
+    virsh list --all | grep 'paused$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
 }
 
 create_snapshot() {
     TIMESTAMP=$(date +%Y%m%d%H%M%S)
+    local NAME=$1
+    shift
+    local PARAMS="$@"
     virsh list --all | grep 'running$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh suspend %
     for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
-        echo "virsh snapshot-create-as $VM ${BUILD_TAG}_${SNAPSHOT}_${TIMESTAMP} --halt"
+        echo "virsh snapshot-create-as $VM ${BUILD_TAG}_${NAME}_${TIMESTAMP} $PARAMS"
     done | xargs --verbose -n1 -i% bash -c %
 }
 
@@ -98,7 +103,11 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
     fi
 
     echo "================================================================================="
-    revert_env
+    if [ -z "$SNAPSHOT" ]; then
+        echo "Using current state of environment"
+    else
+        revert_env $SNAPSHOT
+    fi
 
 
     ADMIN_IP=$(virsh net-dumpxml ${ENV}_admin | grep -P "(\d+\.){3}"  -o | awk '{print $0"2"}')
@@ -585,6 +594,10 @@ pushd $TOP_DIR/../..
 
         fi
 
+        create_snapshot ready_for_tempest
+        resume_env
+        update_time
+
         echo "================================================================================="
         echo "Generating Tempest's config..."
         pushd etc
@@ -622,7 +635,7 @@ pushd $TOP_DIR/../..
         #nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml $TESTCASE
         TEMPEST_RET=$?
 
-        create_snapshot
+        create_snapshot tempest_finished --halt
 
         echo "================================================================================="
         if [ "$DELETE_ENTITIES" = "true" ]; then
