@@ -1,0 +1,129 @@
+#!/bin/bash
+
+### DEFAULT CONFIG PARAMETERS ###
+# Tempest/Havana
+# format: TOS__SECTION_NAME__PARAMETER_NAME
+# SECTION_NAME equals 'EVERYWHERE' means that uses all sections with this parameter
+
+export TOS__IDENTITY__URI=$(echo $OS_AUTH_URL)
+export TOS__IDENTITY__URI_V3=$(echo $OS_AUTH_URL | sed -e 's|/[^/]*/$|/v3/|')
+
+export TOS__IDENTITY__USERNAME=${TOS__IDENTITY__USERNAME:-u1}
+export TOS__IDENTITY__PASSWORD=${TOS__IDENTITY__PASSWORD:-secrete}
+export TOS__IDENTITY__TENANT_NAME=${TOS__IDENTITY__TENANT_NAME:-t1}
+
+export TOS__IDENTITY__ALT_USERNAME=${TOS__IDENTITY__ALT_USERNAME:-u2}
+export TOS__IDENTITY__ALT_PASSWORD=${TOS__IDENTITY__ALT_PASSWORD:-secrete}
+export TOS__IDENTITY__ALT_TENANT_NAME=${TOS__IDENTITY__ALT_TENANT_NAME:-t2}
+
+export TOS__IDENTITY__ADMIN_USERNAME=${TOS__IDENTITY__ADMIN_USERNAME:-${OS_USERNAME}}
+export TOS__IDENTITY__ADMIN_PASSWORD=${TOS__IDENTITY__ADMIN_PASSWORD:-${OS_PASSWORD}}
+export TOS__IDENTITY__ADMIN_TENANT_NAME=${TOS__IDENTITY__ADMIN_TENANT_NAME:-${OS_TENANT_NAME}}
+
+export TOS__IDENTITY__DISABLE_SSL_CERTIFICATE_VALIDATION=${TOS__IDENTITY__DISABLE_SSL_CERTIFICATE_VALIDATION:-True}
+
+export TOS__COMPUTE__FLAVOR_REF=${TOS__COMPUTE__FLAVOR_REF:-641}
+export TOS__COMPUTE__FLAVOR_REF_ALT=${TOS__COMPUTE__FLAVOR_REF_ALT:-642}
+
+export TOS__COMPUTE__IMAGE_SSH_USER=${TOS__COMPUTE__IMAGE_SSH_USER:-cirros}
+export TOS__COMPUTE__IMAGE_SSH_PASSWORD=${TOS__COMPUTE__IMAGE_SSH_PASSWORD:-"cubswin:)"}
+export TOS__COMPUTE__IMAGE_ALT_SSH_USER=${TOS__COMPUTE__IMAGE_ALT_SSH_USER:-cirros}
+export TOS__COMPUTE__IMAGE_ALT_SSH_PASSWORD=${TOS__COMPUTE__IMAGE_ALT_SSH_PASSWORD:-"cubswin:)"}
+
+export TOS__COMPUTE__RUN_SSH=${TOS__COMPUTE__RUN_SSH:-false}
+export TOS__COMPUTE__SSH_USER=${TOS__COMPUTE__SSH_USER:-cirros}
+export TOS__COMPUTE__FIXED_NETWORK_NAME=${TOS__COMPUTE__FIXED_NETWORK_NAME:-$(neutron net-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+export TOS__COMPUTE__NETWORK_FOR_SSH=${TOS__COMPUTE__NETWORK_FOR_SSH:-$(neutron net-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+export TOS__COMPUTE__IP_VERSION_FOR_SSH=${TOS__COMPUTE__IP_VERSION_FOR_SSH:-4}
+export TOS__COMPUTE__USE_FLOATINGIP_FOR_SSH=${TOS__COMPUTE__USE_FLOATINGIP_FOR_SSH:-True}
+export TOS__COMPUTE__CHANGE_PASSWORD_AVAILABLE=${TOS__COMPUTE__CHANGE_PASSWORD_AVAILABLE:-false}
+# Run live migration tests (requires 2 hosts)
+#live_migration_available = false
+
+#export TOS__WHITEBOX__PATH_TO_PRIVATE_KEY=${TOS__WHITEBOX__PATH_TO_PRIVATE_KEY:-/var/lib/puppet/ssh_keys/openstack}
+#export TOS__WHITEBOX__DB_URI=${TOS__WHITEBOX__DB_URI:-$DB_URI}
+
+#export TOS__IMAGE__USERNAME=${TOS__IMAGE__USERNAME:-${TOS__COMPUTE__USERNAME}}
+#export TOS__IMAGE__PASSWORD=${TOS__IMAGE__PASSWORD:-${TOS__COMPUTE__PASSWORD}}
+#export TOS__IMAGE__TENANT_NAME=${TOS__IMAGE__TENANT_NAME:-${TOS__COMPUTE__TENANT_NAME}}
+
+export TOS__IMAGE__HTTP_IMAGE=${TOS__IMAGE__HTTP_IMAGE:-${IMAGE_LINK}}
+
+# export TOS__COMPUTE_ADMIN__USERNAME=${TOS__COMPUTE_ADMIN__USERNAME:-${OS_USERNAME}}
+# export TOS__COMPUTE_ADMIN__PASSWORD=${TOS__COMPUTE_ADMIN__PASSWORD:-${OS_PASSWORD}}
+# export TOS__COMPUTE_ADMIN__TENANT_NAME=${TOS__COMPUTE_ADMIN__TENANT_NAME:-${OS_TENANT_NAME}}
+
+#export TOS__IMAGE__API_VERSION=${TOS__IMAGE__API_VERSION:-v2.0}
+
+#export TOS__NETWORK__API_VERSION=${TOS__NETWORK__API_VERSION:-v2.0}
+# A large private cidr block from which to allocate smaller blocks for tenant networks. 
+#tenant_network_cidr = 10.100.0.0/16
+# TODO: remove hardcoded net and router name
+
+if [ "$CLUSTER_NET_PROVIDER" == "neutron" ]; then
+    export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(neutron net-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+    export TOS__NETWORK__PUBLIC_ROUTER_ID=${TOS__NETWORK__PUBLIC_ROUTER_ID:-$(neutron router-show $PUBLIC_ROUTER_NAME | awk '/ id / {print $4}')}
+    export TOS__SERVICE_AVAILABLE__NEUTRON=True
+else
+    export TOS__SERVICE_AVAILABLE__NEUTRON=False
+    export TOS__NETWORK__PUBLIC_NETWORK_ID=${TOS__NETWORK__PUBLIC_NETWORK_ID:-$(nova network-show $PUBLIC_NETWORK_NAME | awk '/ id / {print $4}')}
+fi
+
+export TOS__OBJECT_STORAGE__OPERATOR_ROLE=admin
+
+#TODO: prepare options in [boto] section
+
+export TOS__ORCHESTRATION__INSTANCE_TYPE=f64_1
+
+export TOS__DASHBOARD__DASHBOARD_URL="http://${AUTH_HOST}/dashboard/"
+export TOS__DASHBOARD__LOGIN_URL="http://${AUTH_HOST}/dashboard/auth/login/"
+
+export TOS__SCENARIO__IMG_DIR=${TOS__SCENARIO__IMG_DIR:-${IMG_DIR}}
+export TOS__SCENARIO__AMI_IMG_FILE=${TOS__SCENARIO__AMI_IMG_FILE:-${AMI_IMG_FILE}}
+export TOS__SCENARIO__ARI_IMG_FILE=${TOS__SCENARIO__ARI_IMG_FILE:-${ARI_IMG_FILE}}
+export TOS__SCENARIO__AKI_IMG_FILE=${TOS__SCENARIO__AKI_IMG_FILE:-${AKI_IMG_FILE}}
+
+#[murano]
+## Murano endpoint
+#murano_url = http://${AUTH_HOST}:8082
+##Murano metadata repository
+#murano_metadata = http://${AUTH_HOST}:8084
+## AglistnerIP for creating SQL cluster
+#agListnerIP = 10.0.0.155
+## ClusterIP for creating SQL cluster
+#clusterIP = 10.0.0.150
+#
+#[savanna_common]
+## Host for Savanna
+#savanna_host = "${AUTH_HOST}"
+## Port for Savanna
+#savanna_port = "8386"
+## Api version for Savanna
+#savanna_api_version = "v1.1"
+#
+#[savanna_vanilla]
+#skip_all_tests_for_plugin = False
+#
+#skip_cluster_config_test = False
+#skip_map_reduce_test = False
+#skip_swift_test = False
+#skip_scaling_test = False
+#skip_edp_test = False
+#
+#[savanna_hdp]
+#skip_all_tests_for_plugin = False
+#
+#skip_map_reduce_test = False
+#skip_swift_test = False
+#skip_scaling_test = False
+
+export TOS__CLI__CLI_DIR=$(dirname $(which keystone))
+
+#export TOS__SERVICE_AVAILABLE__GLANCE = True
+#export TOS__SERVICE_AVAILABLE__NOVA = True
+#export TOS__SERVICE_AVAILABLE__HORIZON=True
+[ "$VOLUME_ENABLED" = "cinder" ] && export TOS__SERVICE_AVAILABLE__CINDER=True || export TOS__SERVICE_AVAILABLE__CINDER=False
+[ "$OBJECT_STORE_ENABLED" = "swift" ] && export TOS__SERVICE_AVAILABLE__SWIFT=True || export TOS__SERVICE_AVAILABLE__SWIFT=False
+export TOS__SERVICE_AVAILABLE__HEAT=$HEAT_ENABLED
+export TOS__SERVICE_AVAILABLE__MURANO=$MURANO_ENABLED
+export TOS__SERVICE_AVAILABLE__SAVANNA=$SAVANNA_ENABLED

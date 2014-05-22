@@ -28,6 +28,9 @@ map_os_release () {
         "2013.2")
             OS_RELEASE=havana
             ;;
+        "2014.1")
+            OS_RELEASE=icehouse
+            ;;
         *)
             quit 1 "ERROR: Can not map OpenStack release"
     esac
@@ -225,10 +228,12 @@ ini_param () {
     VALUE=$4
     if [ "$SECTION" == "everywhere" ]; then
         # change all the matching
-        sed -i -e "s|\(^$PARAM\).*=.*|\1 = $VALUE|" $FILENAME
+        #sed -i -e "s|\(^$PARAM\).*=.*|\1 = $VALUE|" $FILENAME
+        sed -i -e "s|^[# ]*\($PARAM\).*=.*|\1 = $VALUE|" $FILENAME
     else
         # change only in "$SECTION"
-        sed -ine "/^\[$SECTION\].*/,/^$PARAM.*=.*/ s|\(^$PARAM\).*=.*|\1 = $VALUE|" $FILENAME
+        #sed -ine "/^\[$SECTION\].*/,/^$PARAM.*=.*/ s|\(^$PARAM\).*=.*|\1 = $VALUE|" $FILENAME
+        sed -ine "/^\[$SECTION\].*/,/^[# ]*$PARAM.*=.*/ s|^[# ]*\($PARAM\).*=.*|\1 = $VALUE|" $FILENAME
     fi
 }
 
@@ -390,7 +395,9 @@ detect_tempest_release () {
         DIR=${1:-TEMPEST_DIR}
         pushd ${DIR}
             export LAST_COMMITS=$(git log --decorate --oneline --max-count=100)
-            if [ -n "$(echo $LAST_COMMITS | grep havana)" ]; then
+            if [ -n "$(echo $LAST_COMMITS | grep icehouse)" ]; then
+                TEMPEST_RELEASE=icehouse
+            elif [ -n "$(echo $LAST_COMMITS | grep havana)" ]; then
                 TEMPEST_RELEASE=havana
             elif [ -n "$(echo $LAST_COMMITS | grep grizzly)" ]; then
                 TEMPEST_RELEASE=grizzly
@@ -434,7 +441,7 @@ install_virtualenv () {
                 pip install -r $TEMPEST_DIR/tools/pip-requires || pip_fail 212 "Can not install virtual environment"
                 pip install -r $TEMPEST_DIR/tools/test-requires || pip_fail 212 "Can not install virtual environment"
                 ;;
-            "havana")
+            "havana"|"icehouse")
                 pip install -r $TEMPEST_DIR/requirements.txt || pip_fail 212 "Can not install virtual environment"
                 pip install -r $TEMPEST_DIR/test-requirements.txt || pip_fail 212 "Can not install virtual environment"
                 ;;
