@@ -6,7 +6,8 @@ if [ -n "$1" ]; then
     #export ENV=3.2_fuelmain.system_test.centos.thread_3_system_test
     export ENV=$1
     echo "Environment: $ENV"
-    dos.py show ${ENV} | python -c 'import sys,pprint; e=sys.stdin.readline(); exec "e="+e ; pprint.pprint(e)'
+    dos.py show ${ENV}
+    #| python -c 'import sys,pprint; e=sys.stdin.readline(); exec "e="+e ; pprint.pprint(e)'
     if [ -n "$2" ]; then
         #export SNAPSHOT=deploy_neutron_vlan
         export SNAPSHOT=$2
@@ -32,11 +33,13 @@ if [ -n "$1" ]; then
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["mode"]') || exit 224
     CLUSTER_NET_PROVIDER=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_provider"]') || exit 224
-    CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || exit 224
+    if [ "$CLUSTER_NET_PROVIDER" != "nova_network" ]; then
+        CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
+            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || exit 224
+    fi
 
     CLUSTER_RELEASE_ID=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release"]["id"]') || exit 224
+        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release_id"]') || exit 224
     CLUSTER_OPERATING_SYSTEM=$(${NAILGUN}/api/releases/ | \
         python -c "import json,sys;obj=json.load(sys.stdin);print [_ for _ in obj if _['id'] == ${CLUSTER_RELEASE_ID}][0]['operating_system']") || exit 224
     CLUSTER_VERSION=$(${NAILGUN}/api/releases/ | \

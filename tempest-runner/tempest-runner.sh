@@ -124,8 +124,10 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["mode"]') || quit 224 "Can not detect cluster paramaters"
     export CLUSTER_NET_PROVIDER=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_provider"]') || quit 224 "Can not detect cluster paramaters"
-    CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
-        python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || quit 224 "Can not detect cluster paramaters"
+    if [ "$CLUSTER_NET_PROVIDER" != "nova_network" ]; then
+        CLUSTER_NET_SEGMENT_TYPE=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
+            python -c 'import json,sys;obj=json.load(sys.stdin);print obj["net_segment_type"]') || quit 224 "Can not detect cluster paramaters"
+    fi
     CLUSTER_RELEASE_ID=$(${NAILGUN}/api/clusters/$CLUSTER_ID/ | \
         python -c 'import json,sys;obj=json.load(sys.stdin);print obj["release_id"]') || quit 224 "Can not detect cluster paramaters"
     CLUSTER_OPERATING_SYSTEM=$(${NAILGUN}/api/releases/ | \
