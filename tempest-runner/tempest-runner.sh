@@ -61,7 +61,7 @@ revert_env () {
     for VM in $(virsh list --all |  awk '/ '${ENV}'_/ {print $2}'); do
         S=$(virsh -q snapshot-list $VM | awk '/ '$NAME' / {print $1}')
         [ -z "$S" ] && quit 2 "Snapshot '$NAME' is not found for domain '$VM'"
-        [ -n "$S" ] && echo "virsh snapshot-revert $VM $S"
+        [ -n "$S" ] && echo "virsh destroy $VM; virsh snapshot-revert $VM $S"
     done | xargs --verbose -n1 -i% bash -c % || quit 223 "Can not revert snapshot."
     virsh list --all | grep 'paused$' | awk '/ '${ENV}'_/ {print $2}' | xargs --verbose -n1 -i% virsh resume %
     sleep 10
