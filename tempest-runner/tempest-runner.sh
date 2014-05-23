@@ -168,7 +168,7 @@ if [ "$OS_AUTH_URL" = "auto" ]; then
 
     echo ""
     ${NAILGUN}/api/clusters/$CLUSTER_ID/network_configuration/$CLUSTER_NET_PROVIDER
-    echo "" 
+    echo ""
 
 fi
 
@@ -631,17 +631,34 @@ pushd $TOP_DIR/../..
         echo "Running tempest..."
 
 
-        if [[ "$COMPONENT" != "all" ]] && [[ "$TYPE" != "all" ]]; then
-            nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
-        elif [[ "$COMPONENT" != "all" ]]; then
-            nosetests -s -v -e  "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component)" $TESTCASE
-        elif [[ "$TYPE" != "all" ]]; then
-            nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "type == '$TYPE'" $TESTCASE
-        else
-            nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml $TESTCASE
-        fi
+        #if [[ "$COMPONENT" != "all" ]] && [[ "$TYPE" != "all" ]]; then
+        #    nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component) and type == '$TYPE'" $TESTCASE
+        #elif [[ "$COMPONENT" != "all" ]]; then
+        #    nosetests -s -v -e  "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "(component and '$COMPONENT' in component)" $TESTCASE
+        #elif [[ "$TYPE" != "all" ]]; then
+        #    nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml --eval-attr "type == '$TYPE'" $TESTCASE
+        #else
+        #    nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml $TESTCASE
+        #fi
 
         #nosetests -s -v -e "$EXCLUDE_LIST" --with-xunit --xunit-file=nosetests.xml $TESTCASE
+
+        if [ ! -d .testrepository ]; then
+            testr init
+        fi
+
+        #export OS_TEST_PATH=./tempest/test_discover
+        #if [ $debug -eq 1 ]; then
+        #    if [ "$testrargs" = "" ]; then
+        #         testrargs="discover ./tempest/test_discover"
+        #    fi
+        #    python -m testtools.run $testrargs
+        #    return $?
+        #fi
+
+        #testr run --parallel "$TESTCASE" "$TYPE"
+        testr run --subunit "$TESTCASE" "$TYPE" | subunit2junitxml --output-to=nosetests.xml
+
         TEMPEST_RET=$?
 
         create_snapshot tempest_finished --halt
