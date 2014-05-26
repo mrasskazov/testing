@@ -452,7 +452,7 @@ install_virtualenv () {
                 rm ${DIR}.reinstalling
                 exit 1
         esac
-        pip install -r $TOP_DIR/tempest-runner-requires || pip_fail 212 "Can not install virtual environment"
+        pip install -U -r $TOP_DIR/tempest-runner-requires || pip_fail 212 "Can not install virtual environment"
         deactivate
         mv ${DIR}.reinstalling ${DIR}.done
     popd

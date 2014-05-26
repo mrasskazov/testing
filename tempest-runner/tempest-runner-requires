@@ -5,4 +5,5 @@ requests>=0.8.8,<1.0
 #mysql-connector-python
 #pymysql
 MySQL-python
-
+junitxml
+python-keystoneclient==0.6.0
