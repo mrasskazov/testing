@@ -201,7 +201,7 @@ export CREATE_ENTITIES=${CREATE_ENTITIES:-true}
 export DELETE_ENTITIES=${DELETE_ENTITIES:-false}
 
 # detect/define some parameters
-export CIRROS_HOST=http://download.cirros-cloud.net/
+export CIRROS_HOST=http://download.cirros-cloud.net
 export CIRROS_RELEASE=$(wget -qO- $CIRROS_HOST/version/released)
 export IMAGE_LINK=${IMAGE_LINK:-"$CIRROS_HOST/$CIRROS_RELEASE/cirros-$CIRROS_RELEASE-x86_64-disk.img"}
 export IMAGE_NAME=${IMAGE_NAME:-tempest-cirros-01}
